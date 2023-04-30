@@ -25,6 +25,8 @@ More info: https://github.com/Postr-Inc
 * -> made error system more efficient and cleaner 4/30/23
 * -> added scss support && jsx component support using require! 4/30/23
 
+# Fixes
+* - added back React._render to fix rendering issue @v1.2.7
 # Installing
 
 Be sure to import react unpkg cdn files -> these should be placed in the head!
@@ -35,7 +37,7 @@ Be sure to import react unpkg cdn files -> these should be placed in the head!
 ```
 Import visi modules and import all your jsx files
 ```html
-<script src="https://unpkg.com/visi.js@1.2.6/React.js" type="module">
+<script src="https://unpkg.com/visi.js@1.2.7/React.js" type="module">
     
 // this imports all the visi files
 "React.js" -> all imports from react that allows the components to be globally used
@@ -155,7 +157,7 @@ function App(){
  // no need to import its alr binded to window!
   const router = new ReactRouter() // window module
   // default module
-  import { ReactRouter } from "https://unpkg.com/visi.js@1.2.6/router.js"
+  import { ReactRouter } from "https://unpkg.com/visi.js@1.2.7/router.js"
   // define routes 
    
   

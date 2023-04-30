@@ -1,6 +1,6 @@
 {
   "name": "visi.js",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "description": "Visi.js is an extensive framework built off react with a little NodeJS functionality",
   "main": "React.js",
   "scripts": {

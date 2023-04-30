@@ -11,3 +11,14 @@ window.ReactRouter = ReactRouter
 window.Lazy = Lazy;
 window.JsonHandler = JsonHandler;
 window.ErrorTrace = ErrorTrace;
+
+window.React._render = (component) => {
+    let root = null;
+    return(container) => {
+        const el = document.getElementById(container);
+        if (!root) {
+            root =  ReactDOM.createRoot(el); // createRoot(container!) if you use TypeScript
+        }
+        root.render(component);
+    }
+}
