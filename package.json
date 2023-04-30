@@ -1,0 +1,16 @@
+{
+  "name": "visi.js",
+  "version": "1.2.0",
+  "description": "Visi.js is an extensive framework built off react with a little NodeJS functionality",
+  "main": "React.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Postr-Inc/visi.js.git"
+  },
+  "author": "Malik [Postr ceo]",
+  "license": "GNU v3",
+  "homepage": "https://github.com/Postr-Inc/lazy-javascript/blob/main/README.md"
+}
