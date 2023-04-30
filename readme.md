@@ -6,8 +6,14 @@ based on: [react](https://github.com/facebook/react)
 <br>
 <br>
 <br>
-why visi?:
-If you like just standard static websites this is useful for adding extensive component support with built in hash routing system, also keeps code clean by using jsx files with babel.
+
+# why use visi?:
+
+If you like just standard static websites this is useful for adding extensive component support with built in hash routing  aswell as error tracking just like nodejs version of react, but in the browser! You also can use parralel data handling and querysharding that allows you to duplicate data, query and cache it in a more efficient way. This is useful for large scale applications that need to handle large amounts of data.
+
+Ontop of all that, visi is constantly being updated and maintained to ensure that it is always up to date with the latest react version and has the latest features. Visi is a library built by postr-inc
+
+More info: https://github.com/Postr-Inc
 <br>
 <br>
 
@@ -16,6 +22,9 @@ If you like just standard static websites this is useful for adding extensive co
 * -> fixed rendering using createroot instead of render 4/29/23
 * -> added savestate and restorestate to res object 4/29/23
 * -> added lazy-javascript as a dependency for data handling 4/30/23
+* -> made error system more efficient and cleaner 4/30/23
+* -> added scss support && jsx component support using require! 4/30/23
+
 # Installing
 
 Be sure to import react unpkg cdn files -> these should be placed in the head!
@@ -26,7 +35,7 @@ Be sure to import react unpkg cdn files -> these should be placed in the head!
 ```
 Import visi modules and import all your jsx files
 ```html
-<script src="https://unpkg.com/visi.js@1.2.0/React.js" type="module">
+<script src="https://unpkg.com/visi.js@1.2.6/React.js" type="module">
     
 // this imports all the visi files
 "React.js" -> all imports from react that allows the components to be globally used
@@ -34,16 +43,15 @@ Import visi modules and import all your jsx files
 "errors.js" -> built in error system similar to react nodejs
 "components.js" -> imports require -> soon will actually add require functionality like nodejs
 "Lazy-javascript" -> package made by me that allows you to handle data in a more efficient way -> using parallel caching and parralel sharding with a chain based array system. https://www.npmjs.com/package/lazy-javascript 
- - Dependecies -> main lazy.js class jsonhandler for parrallel sequential data handling -> CacheManager for saving cache to indexdb
+ - Dependecies -> main lazy.js class jsonhandler for parrallel sequential data handling and querysharding
  
 </script> 
  <body>
-    Import your jsx files here make sure your main js file in this case app.js is text/babel or react   will just error when you try to render jsx in routes!
+    Import your jsx files  using require()!
     <div id="root"></div>
+ 
     <script type="module" src="./React.js" ></script>
     <script  src="app.js" type="text/babel"></script>
-    <script src="./test.jsx" type="text/babel"></script>
-    <script src="./cop.jsx" type="text/babel"></script>
 </body>
 ```
 # things to implement
@@ -53,24 +61,110 @@ Import visi modules and import all your jsx files
   -> Better state management !
 
  -> ts support
+
+# ErrorTrace
+
+ * the error trace was made to make debugging easier and more efficient, it allows you to see the exact line of code that caused the error and the file it was in. This is useful for debugging and finding errors in your code. 
+
+ ```js
+ // to toggle on 
+  ErrorTrace() // this calls the function that listens for errors and displays them in dom
+  // the react module must be import first above all other modules to work properly!
+  ```
+
 # Examples
 
-Routing
+## scss support
+
+```js
+// you can now use require to load scss files and jsx files
+ 
+require('./test.scss'); // keep in mind these are global to the document so u can use them anywhere in the document
+
+/* 
+   body {
+    color: red;
+  
+    .my-nested-element {
+      color: blue;
+      .my-nested-element-2 {
+        color: green;
+      }
+      #my-nested-element-3 {
+        color: yellow;
+      }
+    }
+
+}
+
+ 
+  */
+
+ function App(){
+  return(
+    <div className="my-nested-element">
+    // now you can access the rest of the element styles through the stylesheet
+    </div>
+  )
+ }
+
+```
+
+## jsx importing with require
+
+```jsx
+
+
+// template.jsx
+
+function Template(props){
+  return(
+    <div>
+      <h1>{props.text}</h1>
+    </div>
+  )
+}
+
+// now im going to require it in my main.jsx file -> the filename must match the component name else it will not work!
+
+let Template = require('./Template.jsx');
+
+function App(){
+  return(
+    <div>
+    <Template text="jelly bun cinnamon popsicle"/>
+    </div>
+  )
+
+
+}
+  // now your ready to render the component! -> you can also use it within res.jsx
+
+  so in router file you can do this
+ 
+   let App = require('./App.jsx');
+  router.on("/test", (req, res) => {
+    res.render(<App/>)
+    res.return()
+  })
+
+```
+## Routing
 
 ```js
  // no need to import its alr binded to window!
   const router = new ReactRouter() // window module
-  // defualt module
-  import { ReactRouter } from "https://unpkg.com/visi.js@1.2.0/router.js"
+  // default module
+  import { ReactRouter } from "https://unpkg.com/visi.js@1.2.6/router.js"
   // define routes 
    
   
 
   router.bindRoot("element") -> set the root render element 
 
-  // you can require jsx files to be appended to dom, or just use script tags bc it does the same thing just looks cooler :}
+  // you can require jsx files and render them in the router file keep in mind the filename must match the component name else it will not work!
   
-  require('./components/index.jsx');
+  let App = require('./components/App.jsx');
    
     /*
      Router on & get both have req and res params: req returns parameters like :id and res returns the response you can have as many parameters as ur application needs 
@@ -82,7 +176,7 @@ Routing
      // get the req param
      let val = req.params.id
       
-     res.jsx(<El/>)
+     res.jsx(<App />)
      res.return() // close out of the current event and allow a new event to be added to listen for the route
    });
    router.on || router.get("", (req, res) => {

@@ -10,3 +10,4 @@ window.useRef = React.useRef
 window.ReactRouter = ReactRouter
 window.Lazy = Lazy;
 window.JsonHandler = JsonHandler;
+window.ErrorTrace = ErrorTrace;
