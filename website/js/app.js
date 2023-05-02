@@ -1,0 +1,10 @@
+ErrorTrace()
+const app = new ReactRouter()
+app.bindRoot("app")
+app.root("/", function(req, res) {
+    let App = require('./components/App.jsx')
+    res.title('Visi.js')
+    res.return()
+    res.jsx(<App />)
+    res.return()
+})
