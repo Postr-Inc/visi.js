@@ -41,8 +41,12 @@ const About = () => {
 
                         <div>
                             <div className="flex float-right  ">
-                                <i className="fa-brands text-white text-2xl fa-github"></i>
-                                <i className="fa-brands text-white text-2xl fa-discord mx-6"></i>
+                                <a href="https://github.com/Postr-Inc/visi.js">
+                                   <i className="fa-brands text-white text-2xl fa-github"></i>
+                                </a>
+                                <a href="https://discord.gg/RGYQKENTRk">
+                                  <i className="fa-brands text-white text-2xl fa-discord mx-6"></i>
+                                </a>
                                 <i className="fa-brands text-white text-2xl fa-twitter mx-5"></i>
                             </div>
                         </div>
