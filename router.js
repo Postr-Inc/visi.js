@@ -57,7 +57,6 @@ class ReactRouter {
           query[queryParam[0]] = queryParam[1];
         }
       }
-      console.log("query: " + JSON.stringify(query))
       const req = {
         "params": params,
         "query": query,
@@ -245,7 +244,6 @@ class ReactRouter {
             if (file.endsWith(".png" || ".jpg" || ".jpeg" || ".gif" || ".svg" || ".ico")) {
               document.getElementById(element).innerHTML = `<img src="${file}" />`;
             } else if (file.endsWith(".json")) {
-              console.log("json")
               fetch(file)
                 .then(response => response.json())
                 .then(data => {
@@ -387,7 +385,6 @@ class ReactRouter {
                   if (file.endsWith(".png" || ".jpg" || ".jpeg" || ".gif" || ".svg" || ".ico")) {
                     document.getElementById(element).innerHTML = `<img src="${file}" />`;
                   } else if (file.endsWith(".json")) {
-                    console.log("json")
                     fetch(file)
                       .then(response => response.json())
                       .then(data => {
@@ -611,7 +608,7 @@ class ReactRouter {
               return data.ip;
             }
             else {
-              console.log('IP Request Failed');
+              console.error('IP Request Failed');
             }
           }
         },
@@ -662,7 +659,6 @@ class ReactRouter {
             if (file.endsWith(".png" || ".jpg" || ".jpeg" || ".gif" || ".svg" || ".ico")) {
               document.getElementById(element).innerHTML = `<img src="${file}" />`;
             } else if (file.endsWith(".json")) {
-              console.log("json")
               fetch(file)
                 .then(response => response.json())
                 .then(data => {
@@ -863,7 +859,6 @@ class ReactRouter {
                   let encoder = new TextEncoder();
                   let input = encoder.encode( data );
                   let output = compressed.encode( input );
-                  console.log( output );
                 hooked = true;
               },
               sendFile: (file) => {
@@ -879,7 +874,6 @@ class ReactRouter {
                   if (file.endsWith(".png" || ".jpg" || ".jpeg" || ".gif" || ".svg" || ".ico")) {
                     document.getElementById(element).innerHTML = `<img src="${file}" />`;
                   } else if (file.endsWith(".json")) {
-                    console.log("json")
                     fetch(file)
                       .then(response => response.json())
                       .then(data => {
@@ -959,7 +953,6 @@ class ReactRouter {
             query[queryParam[0]] = queryParam[1];
           }
         }
-        console.log("query: " + JSON.stringify(query))
         const req = {
           "params": params,
           "query": query,

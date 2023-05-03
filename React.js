@@ -32,7 +32,9 @@ window.React._render = (component) => {
         if (!root) {
             root =  ReactDOM.createRoot(el); // createRoot(container!) if you use TypeScript
         }
+         
         root.render(component);
     }
 }
 
+console.log("%cvisi.js v1.3.5 loaded", "color: white; background:black; border-radius:5px; font-size: 20px; padding: 10px;")

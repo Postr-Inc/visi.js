@@ -64,7 +64,7 @@
 
 * -> added all react hooks now they should work within ts js tsx and jsx scopes 5/2/23
   
-  
+* -> component caches visi now caches components to prevent re-fetching 5/3/23 only fetches once per component!
 
 > **Fixes** :
 
@@ -80,6 +80,8 @@
 
 * - fixed require() issue in v1.0.0 @1.2.8 components now are imported properly!
 
+`5/3/23`
+* - slow rendering - visi now waits for all components to be imported before rendering @1.3.5 
   
 
   
@@ -111,7 +113,7 @@ Import the latest visi.js file -> this should be placed in the body of your main
 
 ```html
 
-<script src="https://unpkg.com/visi.js@1.3.4/React.js" type="module"></script>
+<script src="https://unpkg.com/visi.js@1.3.5/React.js" type="module"></script>
 
   
 
