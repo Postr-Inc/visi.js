@@ -356,4 +356,4 @@ class JsonHandler   {
  export default  { Lazy, JsonHandler}
 
  window.Lazy = Lazy;
-  window.JsonHandler = JsonHandler;
+ window.JsonHandler = JsonHandler;

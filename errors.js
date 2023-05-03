@@ -87,6 +87,7 @@ function ErrorTrace(){
         <p class="text-secondary">${url}:${lineNo}:${columnNo}</p>
         <p class="text-secondary">${errorType}</p>
         <p class="text-secondary">${stack}</p>
+        <p class="text-secondary">${column_no}</p>
         <div class="code-block">${codeBlock}</div>
       </div>
     `;
