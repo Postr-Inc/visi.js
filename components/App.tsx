@@ -82,9 +82,10 @@ function App() {
                                             <img loading="lazy"loading="lazy" src="https://img.icons8.com/?size=512&id=wpZmKzk11AzJ&format=png" alt="TypeScript" className="h-12 mx-3 w-12 inline-block" /> TypeScript
                                         </p>
                                         <p className="text-slate-400 mt-2">
-                                            Visi.js is includes ts types and tsx support, allowing you to quickly and easily create beautiful, responsive designs.
+                                            Visi.js includes extensive support for typescript applications.
                                         </p>
                                     </div>
+                                    
                                 </div>
                             </div>
 
@@ -101,7 +102,7 @@ function App() {
                     <div className="flex   justify-between">
                         <div className="flex items-center">
                             <p className="text-white text-xl font-bold">Built With</p>
-                            <img loading="lazy"className="h-8 w-8 rounded mr-2 mx-4" src="./components/static/images/visilogo.png" alt="Visi.js Logo" />
+                            <img loading="lazy" className="h-8 w-8 rounded mr-2 mx-4" src="./components/static/images/visilogo.png" alt="Visi.js Logo" />
                         </div>
 
 
