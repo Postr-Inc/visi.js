@@ -1,0 +1,19 @@
+body{
+    background-color: #121212;
+}
+
+.fw-bold{
+    font-weight: bold !important;
+     
+}
+
+.fs-2{
+    font-size: 2rem !important;
+}
+.fs-4{
+    font-size: 5rem !important;
+}
+
+.text-slate-900{
+    color: #ded8d8 !important;
+}
