@@ -1,5 +1,3 @@
-require('@tailwindcss/typography') // require tailwind css
-require('./components/static/styles/app.css')
 let Nav = require('./components/Nav.tsx')
 function App() {
     const btncopy = useRef(null)
