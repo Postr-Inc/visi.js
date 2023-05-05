@@ -1,48 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-env="production">
 
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+     <!-- Primary Meta Tags -->
+     <title>Visijs - An extensive react.js cdn library</title>
+     <meta name="title" content="Visijs - An extensive react.js cdn library">
+     <meta name="description"
+         content="Visi.js is a library that streamlines the development of single-page applications by abstracting away complexity and enabling multi-page functionality">
+ 
+     <!-- Open Graph / Facebook -->
+     <meta property="og:type" content="website">
+     <meta property="og:url" content="https://visijs.rf.gd">
+     <meta property="og:title" content="Visijs - An extensive react.js cdn library">
+     <meta property="og:description"
+         content="Visi.js is a library that streamlines the development of single-page applications by abstracting away complexity and enabling multi-page functionality">
+     <meta property="og:image"
+         content="./components/static/images/visijs.png">
+ 
+     <!-- Twitter -->
+     <meta property="twitter:card" content="summary_large_image">
+     <meta property="twitter:url" content="https://visijs.rf.gd">
+     <meta property="twitter:title" content="Visijs - An extensive react.js cdn library">
+     <meta property="twitter:description"
+         content="Visi.js is a library that streamlines the development of single-page applications by abstracting away complexity and enabling multi-page functionality">
+     <meta property="twitter:image"
+         content="./components/static/images/visijs.png">
+         <script src="https://unpkg.com/react/umd/react.production.min.js"></script>
+         <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+         <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script> 
     <link rel="shortcut icon" href="./components/static/images/visilogo.png" type="image/x-icon">
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <!-- Primary Meta Tags -->
-    <title>Visijs - An extensive react.js cdn library</title>
-    <meta name="title" content="Visijs - An extensive react.js cdn library">
-    <meta name="description"
-        content="Visi.js is a library that streamlines the development of single-page applications by abstracting away complexity and enabling multi-page functionality">
-
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://visijs.rf.gd">
-    <meta property="og:title" content="Visijs - An extensive react.js cdn library">
-    <meta property="og:description"
-        content="Visi.js is a library that streamlines the development of single-page applications by abstracting away complexity and enabling multi-page functionality">
-    <meta property="og:image"
-        content="./components/static/images/visijs.png">
-
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://visijs.rf.gd">
-    <meta property="twitter:title" content="Visijs - An extensive react.js cdn library">
-    <meta property="twitter:description"
-        content="Visi.js is a library that streamlines the development of single-page applications by abstracting away complexity and enabling multi-page functionality">
-    <meta property="twitter:image"
-        content="./components/static/images/visijs.png">
-        
+   
+  
+    <script src="https://unpkg.com/visi.js/React.js" type="module"></script>
 </head>
 
 <body>
     <div id="app"></div>
-   
- <script src="https://unpkg.com/visi.js/React.js" type="module"></script>
-  <script src="./app.js" type="text/babel"></script>
+    <script src="./js/app.js" type="text/babel" data-type="module"></script>
 </body>
 
 </html>
