@@ -3,7 +3,6 @@
         "./components/About.jsx",
         "./components/App.jsx",
         "./components/Nav.jsx",
-        "./components/Code.jsx",
-        "./components/static/styles/app.css"
+        "./components/Code.jsx"
     ]
 }
