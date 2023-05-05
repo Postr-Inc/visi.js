@@ -1,7 +1,8 @@
 ErrorTrace()
 const app = new ReactRouter()
 app.bindRoot("app")
-
+require('@tailwindcss/typography') // require tailwind css
+require('./components/static/styles/app.css')
  
 app.onload(function() {
     app.root("/", function(req, res) {
