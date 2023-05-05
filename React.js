@@ -25,6 +25,23 @@ window.Lazy = Lazy;
 window.JsonHandler = JsonHandler;
 window.ErrorTrace = ErrorTrace;
 let root = null;
+window.multiThread = (threads, callback) => {
+    for(let i = 0; i < threads; i++){
+        const worker = new Worker(function() {
+            self.onmessage = function(e) {
+                const id = e.data.id;
+                const result = callback(id);
+                self.postMessage({ id, result });
+            };
+        });
+        worker.postMessage({id: i});
+        worker.onmessage = function(e) {
+            console.log(`Worker ${e.data.id} returned ${e.data.result}`);
+        }
+     }
+ }
+ 
+ 
 window.React._render = (component) => {
     
     return(container) => {
@@ -36,5 +53,9 @@ window.React._render = (component) => {
         root.render(component);
     }
 }
+ 
 
-console.log("%cvisi.js v1.3.5 loaded", "color: white; background:black; border-radius:5px; font-size: 20px; padding: 10px;")
+console.log("%cvisi.js v1.3.8 loaded", "color: black;   border-radius:5px; font-size: 20px; padding: 10px;")
+
+
+ 

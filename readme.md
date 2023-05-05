@@ -1,23 +1,16 @@
 #  Visi.js
 
-  
 
 #  why use visi?:
-
-  
-
-  
 
 > Visi.js isnt a framework -> it is an extensive library built to simplify spa development and make it more abstract allowing mpa functionality -> it features a components system to allow you to import jsx components using require() like nodejs. aswell as parrallel data handling using lazy-javascript and querysharding, and furthermore providing express like routing and a built in error system.
 
   
 
-> Beta: May or may not work atm!
+> Website built w visi.js -> [view repo](https://github.com/Postr-Inc/visi.js/tree/website)
 
-  
-
-[Website](https://visijs.rf.gd#/about) | [Docs](https://postr-inc.gitbook.io/visi.js-docs/)
-
+[Website](https://postr-inc.github.io/visi.js/#/) | [Docs](https://postr-inc.gitbook.io/visi.js-docs/)
+| [Discord](https://discord.gg/RGYQKENTRk)
   
 
 > **Updates**: New updates are coming soon! recently added -> :
@@ -66,6 +59,25 @@
   
 * -> component caches visi now caches components to prevent re-fetching 5/3/23 only fetches once per component!
 
+* -> added prefetching of components 5/5/23 - allows you to prefetch components before rendering them to the dom
+
+example:
+ './prefetch.json'
+```json     
+
+{
+    "prefetch":[
+        files
+    ]
+    
+}
+```
+```js
+
+prefetch('./prefetch.json') //
+
+```
+
 > **Fixes** :
 
   
@@ -83,102 +95,41 @@
 `5/3/23`
 * - slow rendering - visi now waits for all components to be imported before rendering @1.3.5 
   
+* - fixed bundlesize not returning the apps size @1.3.8
 
   
 
 #  Getting Started
 
-  
-Before you get started be sure to import react unpkg cdn files -> these should be placed in the head of your main html file
-
-  
-
+Before you get started be sure to import react & your prefered version or lts version of visi.js
+heres an example
 ```html
-
+<head>
+<!--development version-->
 <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-
-  
-
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-
-  
-
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  
-
-```
-
-Import the latest visi.js file -> this should be placed in the body of your main html file above your main js file 
-
-```html
-
-<script src="https://unpkg.com/visi.js@1.3.5/React.js" type="module"></script>
-
-  
-
+<script src="https://unpkg.com/visi.js@your_prefered_version/React.js" type="module"></script>
+<!--production version-->
+<html lang="en" data-env="production">
+<!-- production enahances speed of webpage--->
+<script src="https://unpkg.com/visi.js@your_prefered_version/React.js" type="module"></script>
+<script src="https://unpkg.com/react/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone"></script> 
+</head>
 <body>
-
-<div id="root"></div>
-
-<script type="module" src="./React.js"  ></script>
-
-<script src="app.js" type="text/babel"></script>
-
+    <!--Example body structure of index.html-->
+ <div id="root"></div>
+ <script src="app.js" type="text/babel"></script>
 </body>
-
-  
-
 ```
-
 
 #  Things to implement
-
-  
-
--> Add more component library support!
-
-  
-
--> Add lazy loading of files
-
-  
-
--> less css support
-
-
-#  ErrorTrace
-
-```js
-// to toggle on add to top of your file
-ErrorTrace()  
-
-```
+-> minification of code -> visi doesnt minify jsx soon we will try to implement this feature
+-> multi-thread component compiling @v1.3.9 release soon!
 
 > Examples
-
-#  Tailwind & css support
-
-```jsx
-
-require('./styles.css');
-require('@tailwindcss/preset-you-want-to-use'); 
-
-```  
-
-#  Bundlesize
-
-
-```js
-
-// you can read your app's bundle size using the bundleSize() function
-
-bundleSize() // this will return the size of your app in bytes / kb/ mb or gb
-
-```
-
-##  jsx importing with require
-
 
 ```jsx
 // template.jsx
@@ -234,74 +185,6 @@ router.on("/test", (req, res) => {
     res.return()
 
 })
-
-```
-
-#  Parralel querying cache and sharding
-
-  
-Visi.js allows Parallel Querys and parallel caching via https://www.npmjs.com/package/lazy-javascript
-
-  
-
-- Dependecies -> main lazy.js class jsonhandler for parrallel sequential data handling -> CacheManager for saving cache to indexdb
-
-
-
-```js
-async function data() {
-
-
-    return [
-        // some json data here 
-    ]
-}
-
-const jsonhandler = new JsonHandler()
-
-jsonhandler.queryWithSharding([data, data, data, data, data], 5).then((res) => {
-
-
-
-    console.log(res)
-
-
-    // output:
-
-    (15)[{
-        …}, {
-        …}, {
-        …}, {
-        …}, {
-        …}, {
-        …}, {
-        …}, {
-        …}, {
-        …}, {
-        …}, {
-        …}, {
-        …}, {
-        …}, {
-        …}, {
-        …}] x 4
-
-
-    // we duplicated the data -> now we do not have to just use the same data we can have different data on each shard! just change the data in the fn array and you are good to go!
-
-    // lets do some sorting first  pass  lazy  the  arrays
-
-    const lazy = new Lazy(res[0]) // res[0 - 5] we want data on the first shard!
-
-    lazy.sort((a, b) => {
-        new Date(a.createdAt) - new Date(b.createdAt)
-    }).forEach((data) => {
-
-        // what we just did was sort by date and logged the out put their are various methods you can use on the lazy class to manipulate the data!
-
-        console.log(data)
-    })
-})
-
 
 ```
 
