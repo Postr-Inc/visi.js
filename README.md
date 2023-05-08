@@ -1,5 +1,7 @@
 # Visi.js website
-![image](https://user-images.githubusercontent.com/65188863/236011181-7e4de6e2-a436-4fdf-a91e-30f5a29b27fe.png)
+![image](https://user-images.githubusercontent.com/65188863/236735279-76de8198-349c-4f07-8c3f-ee62ae88bab4.png)
+
+ 
 
 A clean responsive website built with visi.js x react x tailwindcss!
 
