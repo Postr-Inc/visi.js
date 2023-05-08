@@ -1,0 +1,99 @@
+{
+    
+    "@tailwind": {
+     "prefix": "tw",
+     "body": [
+      "const tailwind = require('${1:@tailwindcss/plugin}');",
+        "${2:/* or const tailwind = require('tailwindcss'); */}"
+          ],
+          "description": "v1.2.8 Import Tailwind CSS into your project"
+        },
+    "require()": {
+      "prefix": "req",
+      "body": "require('$1')",
+      "description": "v1.2.7 Import components/libraries in your project"
+    },
+    "ErrorTrace()": {
+      "prefix": "err",
+      "body": "ErrorTrace()",
+      "description": "v1.2.7 Enable Error Trace debugging in your project"
+    },
+    "router": {
+      "prefix": "rtr",
+      "body": [
+        "const router = new ReactRouter()",
+        "router.${1|get,post,root|onload|bindRoot|}('/path', (req, res) => {})",
+        "$0"
+      ],
+      "description": "v1.0.0 Add a route to the React Router instance"
+    },
+    "resfunctions":{
+        "prefix":["send", "sendFile", "json","saveState", "saveCookie", "getCookie", "restoreState", "redirect", "render", "download", "return", "ip", "status", "jsx"],
+        "body":[
+            "res.${1|send,sendFile,json,redirect,render,download,return,ip,status,jsx|}(${2|'string', 'file', 'object', 'url', 'file', 'file', 'string', 'string', 'number', 'string'|})"
+        ],
+        "description": "v1.2.6 Res functions for ReactRouter"
+        
+        
+    },
+    "reqfunctions":{
+        "prefix":["method", "params", "query", "url"],
+        "body":[
+            "req.${1|method,params,query,url|}"
+        ],
+        "description": "v1.2.6 Req functions for ReactRouter"
+    },
+    "lazyjs":{
+        "prefix":[
+            "sort",
+            "filter",
+            "map",
+            "reduce",
+            "find",
+            "setStore",
+            "getStore",
+            "reverse",
+            "some", 
+            "every",
+            "concat",
+            "slice",
+            "splice",
+            "push",
+            "pop",
+            "shift",
+            "unshift",
+            "join",
+            "includes",
+            "indexOf",
+            "lastIndexOf",
+            "toString",
+            "notifySubscribers",
+            "subscribe"
+        ],
+        "body":[
+            "const lazy = new Lazy()",
+            "lazy.${1|sort,filter,map,reduce,find,setStore,getStore,reverse,some,every,concat,slice,splice,push,pop,shift,unshift,join,includes,indexOf,lastIndexOf,toString,notifySubscribers,subscribe|}(${2|'string', 'file', 'object', 'url', 'file', 'file', 'string', 'string', 'number', 'string'|})"
+
+        ],
+        "description": "v1.2.6 Lazyjs chainable functions"
+        
+    },
+    "jsonHandler":{
+        "prefix":[
+          "query",
+          "subscribe",
+          "ubsuscribe",
+          "NodeCacheSize",
+          "notifySubscribers",
+          "parallel",
+          "Sharding",
+          "reloadShards"
+        ],
+        "body":[
+          "const json = new JsonHandler()",
+          "json.${1|query,subscribe,ubsuscribe,getCacheSizePerNode,notifySubscribers,queryParallel,queryWithSharding,reloadShards|}(${2|'queryFn: function', 'subscriber: function', 'subscriber: function', 'void', 'fnName: string, args: any[], result: any', 'queryFns: function[]', 'queryFns: function[], shardCount: number', 'void',|})"
+        ],
+        "description": "v1.2.7 JsonHandler class functions"
+    }
+  }
+  
