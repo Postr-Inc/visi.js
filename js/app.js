@@ -1,7 +1,6 @@
 ErrorTrace()
 const app = new ReactRouter()
 app.bindRoot("app")
-prefetch("./js/prefetch.json")
 let App = require('./components/App.jsx')
 let About = require('./components/About.jsx')
 require('@tailwindcss/typography') // require tailwind css
