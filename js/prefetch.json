@@ -1,8 +1,7 @@
 {
     "prefetch":[
-        "./components/About.jsx",
+        "./components/Releases.jsx",
         "./components/App.jsx",
-        "./components/Nav.jsx",
-        "./components/Code.jsx"
+        "./components/Nav.jsx"
     ]
 }

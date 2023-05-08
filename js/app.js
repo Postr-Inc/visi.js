@@ -1,8 +1,9 @@
 ErrorTrace()
 const app = new ReactRouter()
 app.bindRoot("app")
+prefetch("./js/prefetch.json")
 let App = require('./components/App.jsx')
-let About = require('./components/About.jsx')
+let Releases = require('./components/Releases.jsx')
 require('@tailwindcss/typography') // require tailwind css
 require('./components/static/styles/app.css')
 app.root("/", function(req, res) {
@@ -19,9 +20,11 @@ app.on("/home", function(req, res) {
     res.return()
 })
 
-app.on("/about", function(req, res) {
-    res.title('Visi.js - About')
+app.on("/release-cycle", function(req, res) {
+    res.title('Visi.js - releases')
     res.return()
-    res.jsx(<About />)
+    res.jsx(<Releases />)
     res.return()
 })
+
+ 
