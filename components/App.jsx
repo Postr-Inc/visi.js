@@ -1,12 +1,11 @@
+let Nav = require('./components/Nav.jsx')
 function App() {
     const btncopy = useRef(null)
     const [copied, setCopied] = useState(false)
     let [Navbar, setNav] = useState(null)
   
     useEffect(() => {
-        dispose('./components/Nav.jsx', async (data) => {
-            setNav(data)
-       }, null)
+        
         
         if (copied) {
             btncopy.current.innerText = 'Copied!'
@@ -23,7 +22,7 @@ function App() {
         <div>
             {/*navbar mobile*/}
 
-            {Navbar}
+            <Nav />
 
 
             <main>
