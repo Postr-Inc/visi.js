@@ -1,8 +1,13 @@
-let Nav = require('./components/Nav.jsx')
 function App() {
     const btncopy = useRef(null)
     const [copied, setCopied] = useState(false)
+    let [Navbar, setNav] = useState(null)
+  
     useEffect(() => {
+        dispose('./components/Nav.jsx', async (data) => {
+            setNav(data)
+       }, null)
+        
         if (copied) {
             btncopy.current.innerText = 'Copied!'
             setTimeout(() => {
@@ -18,7 +23,7 @@ function App() {
         <div>
             {/*navbar mobile*/}
 
-            <Nav />
+            {Navbar}
 
 
             <main>
@@ -83,19 +88,28 @@ function App() {
                     <div className="flex   justify-between">
                         <div className="flex items-center">
                             <p className="text-white text-xl font-bold">Built With</p>
-                            <img loading="lazy" className="h-8 w-8 rounded mr-2 mx-4" src="./components/static/images/visilogo.png" alt="Visi.js Logo" />
+                            <img 
+                             width={32 } height={16} c 
+                            className=" rounded mr-2 mx-4" 
+                            src="./components/static/images/visilogo.png" alt="Visi.js Logo" />
                         </div>
 
 
                         <div>
                             <div className="flex float-right  ">
                                 <a href='https://github.com/Postr-Inc/visi.js'><img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
-                                width={30} height={30} className="rounded-full" />
+                                width={30} height={30} className="rounded-full"
+                                alt="Visi githb"
+                                aria-label="Visi github"
+                                />
                                 </a>
                                 
                                 <a href='https://discord.gg/RGYQKENTRk'>
                                     <img src="https://img.icons8.com/?size=512&id=Mk8iYNRHUM8y&format=png"
-                                    width={38} height={38} className="rounded-full mx-5" />
+                                    width={38} height={38} className="rounded-full mx-5"
+                                    alt="Visi discord"
+                                    aria-label="Visi discord"
+                                    />
 
                                 </a>
                                 <i className="fa-brands text-white text-2xl fa-twitter mx-5"></i>
