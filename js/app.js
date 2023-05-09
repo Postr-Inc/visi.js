@@ -1,42 +1,34 @@
 ErrorTrace()
 const app = new ReactRouter()
 app.bindRoot("app")
- 
-require('@tailwindcss/typography') // require tailwind css
-require('./components/static/styles/app.css')
+lib('@tailwindcss/typography') // require tailwind css
+lib('./components/static/styles/app.css')
 app.root("/", async function(req, res) {
     res.title('Visi.js')
     res.return()
     dispose('./components/App.jsx',(App)=>{
         res.jsx(<App />)
-   })
+     }, null)
     res.return()
 })
 
-app.on("/home", async function(req, res) {
+app.on("/", async function(req, res) {
     res.title('Visi.js')
     res.return()
     dispose('./components/App.jsx',(App)=>{
-         res.jsx(<App />)
-    })
+        res.jsx(<App />)
+     }, null)
     res.return()
 })
 
 app.on("/release-cycle",async  function(req, res) {
     res.title('Visi.js - releases')
     res.return()
-    dispose('./components/Releases.jsx',(Releases)=>{
-        res.jsx(<Releases />)
-    })
+    dispose('./components/Releases.jsx',(Release)=>{
+        res.jsx(<Release />)
+     }, null)
     res.return()
 })
 
  
-app.on('/', async function(req, res) {
-    res.title('Visi.js')
-    res.return()
-    dispose('./components/App.jsx',(App)=>{
-        res.jsx(<App />)
-    })
-    res.return()
-})
+ 

@@ -14,7 +14,7 @@ const Nav = (props) => {
                     <p className='text-white ml-2 font-semibold text-sm bg-gray-800 px-2 py-1 rounded-md'>v1.0.1</p>
                     <div className=" ">
                         <div className="ml-10 flex items-baseline">
-                          <a href="#/home"   className="text-white px-3 py-2 hover:text-green-500  rounded-md text-sm font-medium"
+                          <a href="#/"   className="text-white px-3 py-2 hover:text-green-500  rounded-md text-sm font-medium"
                           aria-label="Home"
                           >Home</a>
                           <a aria-label="documentation" href="https://postr-inc.gitbook.io/visi.js-docs/"  className="text-white px-3 py-2 hover:text-green-500  rounded-md text-sm font-medium">Docs</a>
