@@ -1,7 +1,9 @@
+ 
 import "./errors.js"
 import "./router.js"
 import "./components.js"
 import "./lazy.js"
+import "./disposable.js"
 window.useState = React.useState
 window.useEffect = React.useEffect
 window.useContext = React.useContext
@@ -21,7 +23,7 @@ window.useId = React.useId
 window.useDeferredValue = React.useDeferredValue
 window.useTransition = React.useTransition
 window.ReactRouter = ReactRouter
-window.Lazy = Lazy;
+window.Lazy  = new React.lazy
 window.JsonHandler = JsonHandler;
 window.ErrorTrace = ErrorTrace;
 let root = null;
@@ -46,16 +48,24 @@ window.React._render = (component) => {
     
     return(container) => {
         const el = document.getElementById(container);
+        el.style.visibility  = "hidden"
         if (!root) {
             root =  ReactDOM.createRoot(el); // createRoot(container!) if you use TypeScript
         }
          
         root.render(component);
+        el.style.visibility  = "visible"
     }
 }
  
 
-console.log("%cvisi.js v1.3.8 loaded", "color: black;   border-radius:5px; font-size: 20px; padding: 10px;")
+console.log("%cvisi.js v1.4.2 loaded", "color: black;   border-radius:5px; font-size: 20px; padding: 10px;")
 
 
  
+
+if(document.querySelector('html').getAttribute("data-env") == "production") {
+      // remove whitespaces 
+        document.body.innerHTML = document.body.innerHTML.replace(/\s{2,}/g, ' ');
+  }
+  
