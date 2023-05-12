@@ -35,6 +35,9 @@ compile que sharding:
  - Currently prefetch fetches all at once 1 by 1 the goal is to shard based on threads, and compile in  a quee on different shards!
  - visi nodejs -> allowing server to client using sse  similar to nextjs
  
+# lts 1.6.5-info
+
+lib now supports daisyui d3.js and more -> multithread function window.multithread() -> and lazyjs saveshard now saves to local server or download json queried objects.
 ##  Maintainers
 
 - [Malik](https://github.com/MalikWhitten67)

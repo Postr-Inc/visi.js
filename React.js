@@ -27,22 +27,51 @@ window.Lazy  = new React.lazy
 window.JsonHandler = JsonHandler;
 window.ErrorTrace = ErrorTrace;
 let root = null;
-window.multiThread = (threads, callback) => {
-    for(let i = 0; i < threads; i++){
-        const worker = new Worker(function() {
-            self.onmessage = function(e) {
-                const id = e.data.id;
-                const result = callback(id);
-                self.postMessage({ id, result });
-            };
-        });
-        worker.postMessage({id: i});
-        worker.onmessage = function(e) {
-            console.log(`Worker ${e.data.id} returned ${e.data.result}`);
-        }
-     }
- }
- 
+window.multiThread = (threads, data, callback) => {
+    const workers = [];
+    const results = [];
+  
+    // create a pool of workers
+    for (let i = 0; i < threads; i++) {
+      workers.push(new Worker(function() {
+        self.onmessage = function(e) {
+          const id = e.data.id;
+          const result = callback(e.data.data[id], id);
+          self.postMessage({ id, result });
+        };
+      }));
+    }
+  
+    // execute each iteration in parallel
+    const promises = Array.from({ length: data.length }, (_, i) => {
+      return new Promise((resolve, reject) => {
+        workers[i % threads].onmessage = function(e) {
+          const id = e.data.id;
+          const result = e.data.result;
+          console.log(`Worker ${id} returned ${result}`);
+          results[id] = result;
+          resolve();
+        };
+  
+        workers[i % threads].onerror = function(e) {
+          console.error(`Worker ${i % threads} encountered an error:`, e);
+          reject(e);
+        };
+  
+        workers[i % threads].postMessage({ id: i % threads, data: data, index: i });
+      });
+    });
+  
+    // wait for all promises to resolve
+    return Promise.all(promises).then(() => {
+      // terminate workers
+      workers.forEach((worker) => worker.terminate());
+  
+      // return results
+      return results;
+    });
+  };
+  
  
 window.React._render = (component) => {
     
