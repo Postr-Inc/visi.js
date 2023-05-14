@@ -18,12 +18,8 @@
 <img width="320" src="https://user-images.githubusercontent.com/65188863/236870311-f7c72afd-efec-44dc-b850-82e71ea71245.png"/>
 <img width="320" src="https://user-images.githubusercontent.com/65188863/236870443-ae697dbd-85f3-4c40-a167-1dcadebbd150.png"/>
 
-
 > **Warning:** v1.5.7 removes require -> use dispose for importing components and lib() for importing libraries or custom css [Learn More](https://postr-inc.gitbook.io/visi.js-docs/v1.3.8/updates/5-8-23-dispose-replaces-require)
 
-> **Updates**: [lts updates](https://postr-inc.gitbook.io/visi.js-docs/v1.3.8/updates)
-
-> **Fixes** : [1.3.8](https://postr-inc.gitbook.io/visi.js-docs/v1.3.8/fixes)
 
 > **Getting Started**:  [quick start](https://postr-inc.gitbook.io/visi.js-docs/quick-start)
  
@@ -31,13 +27,14 @@
 > **examples**: [1.3.8](https://postr-inc.gitbook.io/visi.js-docs/examples)
 
 #Coming soon
-compile que sharding:
- - Currently prefetch fetches all at once 1 by 1 the goal is to shard based on threads, and compile in  a quee on different shards!
- - visi nodejs -> allowing server to client using sse  similar to nextjs
- 
-# lts 1.6.5-info
 
-lib now supports daisyui d3.js and more -> multithread function window.multithread() -> and lazyjs saveshard now saves to local server or download json queried objects.
+- vue support
+- lit.js support
+- alpine support
+ 
+# lts 1.6.7-stable-2
+> **note**:  
+1.6.7-stable-2 fixes issues with tailwindcss not parsing plugins in lib()
 ##  Maintainers
 
 - [Malik](https://github.com/MalikWhitten67)
