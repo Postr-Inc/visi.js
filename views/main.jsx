@@ -16,6 +16,7 @@ function main() {
                 <a href="#/team"> Team </a>
               </li>
               <li><a href="#/releases">Releases</a></li>
+             
             </ul>
           </div>
           <a className="normal-case  font-bold mx-5"> <img src={logo} className="h-7 w-7 rounded" alt="logo" />
@@ -29,6 +30,7 @@ function main() {
             <li   ><a href="#/team" className=" hover:bg-transparent"> Team</a></li>
 
             <li><a href="#/releases" className=" hover:bg-transparent"> Releases</a></li>
+          
           </ul>
         </div>
 
@@ -41,8 +43,12 @@ function main() {
               <h1 className="lg:text-5xl font-bold  lg:w-[60%]  text-3xl  mx-auto text-black">Not a Framework, Just A <span className="bg-gradient-to-r from-cyan-500 text-transparent to-blue-500 bg-clip-text">library</span>!</h1>
               <p className=" mt-6 text-2xl text-slate-500">An performant library enhancing SPA functionality!</p>
               <div className="flex justify-center mt-10">
-                <button className="btn btn-slate-200">Learn More</button>
-                <button className=" mx-2 btn btn-outline btn-success hover:bg-transparent">Get Started</button>
+                <a className="btn btn-slate-200"
+                href="https://postr-inc.gitbook.io/visi.js-docs/api-reference"
+                >Learn More</a>
+                <a className=" mx-2 btn btn-outline btn-success hover:bg-transparent"
+                href="https://postr-inc.gitbook.io/visi.js-docs/quick-start"
+                >Get Started</a>
                 <br></br>
                
                  

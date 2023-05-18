@@ -16,6 +16,7 @@ function releases() {
                                 <a href="#/team"> Team </a>
                             </li>
                             <li><a href="#/releases">Releases</a></li>
+                              
                         </ul>
                     </div>
                     <a href="#/" className="normal-case  font-bold mx-5"> <img src={logo} className="h-7 w-7 rounded" alt="logo" />
@@ -29,12 +30,13 @@ function releases() {
                         <li   ><a href="#/team" className=" hover:bg-transparent"> Team</a></li>
 
                         <li><a href="#/releases" className=" hover:bg-transparent"> Releases</a></li>
+                         
                     </ul>
                 </div>
 
             </div>
 
-            <div className="flex inline mx-auto py-2 justify-start text-dark lg:mx-[20%] md:mx-[15%] mt-10">
+            <div className="flex inline mx-auto py-2 justify-start text-dark lg:mx-[20%] md:mx-[15%] mt-5">
                 <div className="">
                     <div className="hero-content ">
                         <div className="flex flex-wrap">
@@ -50,7 +52,7 @@ function releases() {
                                     </p>
                                     <ul className="mt-6 lg:w-[80%] md:w-[70%] w-50 prose text-slate-500">
                                         <li className="mt-5"><div className="badge bg-green-500 border-none">Stable</div> - these releases are ready for production.</li>
-                                        <li><div className="badge bg-red-600 border-none mt-5">Canary</div> - these releases are not ready for production.
+                                        <li><div className="badge bg-red-300 border-none mt-5">Canary</div> - these releases are not ready for production.
                                         Canary releases are new implementations that we will not  guarantee to be stable. They are released to get feedback from the community and to test new features.
                                         </li>
                                         <li className="mt-5"><div className="badge bg-blue-500 border-none">Beta</div>

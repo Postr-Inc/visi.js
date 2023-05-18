@@ -33,3 +33,11 @@ app.on("/releases", (req, res) =>{
         res.jsx(<Releases/>)
     })
 })
+
+app.on('/showcase', (req, res)=>{
+    dispose('./views/showcase.jsx', (Showcase) =>{
+        res.title("Showcase")
+        res.return()
+        res.jsx(<Showcase/>)
+    })
+})

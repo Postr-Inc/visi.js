@@ -16,6 +16,7 @@ function team() {
                                 <a href="#/team"> Team </a>
                             </li>
                             <li><a href="#/releases">Releases</a></li>
+                            
                         </ul>
                     </div>
                     <a href="#/" className="normal-case  font-bold mx-5"> <img src={logo} className="h-7 w-7 rounded" alt="logo" />
@@ -29,6 +30,8 @@ function team() {
                         <li   ><a className=" hover:bg-transparent"> Team</a></li>
 
                         <li><a href="#/releases" className=" hover:bg-transparent"> Releases</a></li>
+ 
+                        
                     </ul>
                 </div>
 
@@ -66,7 +69,7 @@ function team() {
                                                         </h3>
                                                     </a>
                                                     <p className="text-slate-500">Creator @ Visi.js</p>
-                                                    <p>&lt;&gt; <a href="" className="text-[17px] text-accent">Visi</a> </p>
+                                                    <p>&lt;&gt; <a href="https://github.com/Postr-Inc/visi.js" className="text-[17px] text-accent">Visi</a> </p>
                                                     <p>📍 United States </p>
                                                     <p>🗺️ English </p>
                                                 </div>
