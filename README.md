@@ -1,4 +1,5 @@
-#  Visi.js
+ 
+<h1 align="center">Visi.js</h1>
 
 
 #  why use visi?:
