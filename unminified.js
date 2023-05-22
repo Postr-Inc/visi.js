@@ -3,6 +3,7 @@
 
 let mui = false
 window.muiprod = false
+let c  = caches
 
 class Lazy {
   
@@ -1246,6 +1247,8 @@ export class ReactRouter {
       this.rootElement = null;
       this.hashChangeListener = null;
       let storedroutes = []
+      this.listeners =  {}
+      window.addEventListener('message', this.handleMessage.bind(this));
     }
   
     route(path) {
@@ -1844,7 +1847,45 @@ export class ReactRouter {
   
       return false;
     }
+    
+    post(path, data, headers = {}) {
+      const message = {
+        path: path,
+        data: data,
+        headers: headers
+      };
   
+      // Send the message to the target file
+      window.postMessage(message, '*');
+    }
+  
+    listen() {
+      const self = this;
+  
+      return {
+        post: (callback) => {
+          const listenerId = Date.now().toString();
+          self.listeners[listenerId] = callback;
+  
+          return () => {
+            delete self.listeners[listenerId];
+          };
+        }
+      };
+    }
+  
+    handleMessage(event) {
+      const message = event.data;
+      const path = message.path;
+      const data = message.data;
+      const headers = message.headers;
+  
+      // Check if there are listeners for the given path
+      if (this.listeners[path]) {
+        // Execute the listeners with the received data and headers
+        this.listeners[path](data, headers);
+      }
+    }
   
   
     bindRoot(element) {
@@ -2900,48 +2941,50 @@ window.onload = () => {
     
     
    
-    if (document.querySelector("html").getAttribute("data-env") === "production") {
-      // Preload script files
-      document.querySelectorAll('script[src]').forEach(script => {
-        const link = document.createElement("link");
-        link.rel = "preload";
-        link.href = script.src;
-        link.as = "script";
-        document.head.appendChild(link);
-      });
-    
-      // Lazy load images
-      document.querySelectorAll('img[src]').forEach(img => {
-        const observer = new IntersectionObserver(entries => {
-          if (entries[0].isIntersecting) {
-            const src = img.dataset.src;
-            if (src) {
-              img.src = src;
-              img.removeAttribute('src');
-              observer.disconnect();
-              console.log("Lazy loaded image: " + src);
-            }
-          }
+    window.addEventListener('DOMContentLoaded', () => {
+      if (document.querySelector("html").getAttribute("data-env") === "production") {
+        // Preload script files
+        document.querySelectorAll('script[src]').forEach(script => {
+          const link = document.createElement("link");
+          link.rel = "preload";
+          link.href = script.src;
+          link.as = "script";
+          document.head.appendChild(link);
         });
-        observer.observe(img);
-      });
-    
-      // Preload stylesheets
-      document.querySelectorAll('link[rel="stylesheet"]').forEach(styleSheet => {
-        const link = document.createElement("link");
-        link.rel = "preload";
-        link.href = styleSheet.href;
-        link.as = "style";
-        link.crossOrigin = "anonymous";
-        document.head.appendChild(link);
-      });
-    } else {
-      console.warn("Not in production mode, skipping asset optimization.");
-      console.log(getBundleSize())
-    }
-    
-    
-    
+      
+        // Lazy load images
+        document.querySelectorAll('img[src]').forEach(img => {
+          const observer = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting) {
+              const src = img.dataset.src;
+              if (src) {
+                img.src = src;
+                img.removeAttribute('src');
+                observer.disconnect();
+                console.log("Lazy loaded image: " + src);
+              }
+            }
+          });
+          observer.observe(img);
+        });
+      
+        // Preload stylesheets
+        document.querySelectorAll('link[rel="stylesheet"]').forEach(styleSheet => {
+          const link = document.createElement("link");
+          link.rel = "preload";
+          link.href = styleSheet.href;
+          link.as = "style";
+          link.crossOrigin = "anonymous";
+          document.head.appendChild(link);
+        });
+      } else {
+        console.warn("Not in production mode, skipping asset optimization.");
+        console.log(getBundleSize())
+      }
+      
+      
+        
+    })
     
   
 }
@@ -2956,7 +2999,7 @@ window.JsonWebToken = {
     const encodedPayload = window.btoa(JSON.stringify(payload));
     const signature = window.btoa(secret);
     const token = `${encodedPayload}.${signature}`;
-
+    
     localStorage.setItem('jwtToken', token); // Save the token to localStorage
     return token;
   },
@@ -2985,6 +3028,8 @@ window.JsonWebToken = {
   }
 };
 
+let jwtexpery = localStorage.getItem('jwtToken');
+let date = 
  
 
  
@@ -3030,7 +3075,7 @@ window.React._render = (component) => {
     }
 }
  
- window.visiVersion = "1.6.9-beta"
+window.visiVersion = "1.7.0-stable"
  fetch('https://registry.npmjs.org/visi.js').then(res => res.json()).then(json => {
     if(json['dist-tags'].latest !== visiVersion){
        console.assert(false, `You are using an outdated version of Visi.js. Please update to ${json['dist-tags'].latest} by running npm i visi.js@latest`, {
@@ -3041,96 +3086,8 @@ window.React._render = (component) => {
  }).catch(err => {
     console.error("Failed to check for updates. Error: " + err)
  })
-window.ErrorTrace = () => {
-  window.onmessageerror = function (event) {
-    console.log(event);
-  };
-
-  window.onerror = function (msg, url, lineNo, columnNo, error) {
-    console.log(msg, url, lineNo, columnNo, error);
-    document.title = "Error " + msg;
-    document.head.innerHTML = `
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-      <link rel="stylesheet" href="https://unpkg.com/tailwindcss@latest/dist/tailwind.min.css">
-      <style>
-        body {
-          background-color: #f9fafb;
-        }
-        .error-page {
-          max-width: 800px;
-          margin: 0 auto;
-          padding: 2rem;
-        }
-        .error-page h2 {
-          font-size: 2.5rem;
-          font-weight: 800;
-          line-height: 3rem;
-          margin-bottom: 1rem;
-          color: #ff2e63;
-        }
-        .error-page p {
-          font-size: 1.5rem;
-          font-weight: 600;
-          line-height: 2rem;
-          margin-bottom: 0.5rem;
-        }
-        .error-page pre {
-          background-color: #f1f5f9;
-          color: #1e293b;
-          font-size: 1.2rem;
-          padding: 1rem;
-          margin: 0;
-          overflow-x: auto;
-        }
-      </style>
-    `;
-
-    let xhml = new XMLHttpRequest();
-    xhml.open("GET", url, true);
-    xhml.send();
-    xhml.onreadystatechange = function () {
-      if (xhml.readyState == 4 && xhml.status == 200) {
-        let content = xhml.responseText;
-        let lines = content.split("\n");
-        let highlightedLine = lines[line_no - 1];
-        let line_no = lineNo - 1;
-        let column_no = columnNo - 1;
-
-
-        // Generate code block
-        let codeBlock = "";
-        for (let i = Math.max(0, line_no - 5); i < Math.min(lines.length, line_no + 5); i++) {
-          let lineNumber = i + 1;
-          let lineContent = lines[i];
-          let lineClass = "";
-          if (i == line_no) {
-            lineClass = "text-red-600 font-bold";
-            codeBlock += `<span class="rounded bg-red-100">${lineNumber}: ${highlightedLine}</span><br>`;
-          } else {
-            codeBlock += `<span>${lineNumber}: ${lineContent}</span><br>`;
-          }
-        }
-
-        // remove stylesheets
-        document.adoptedStyleSheets = [];
-        document.body.innerHTML = `
-          <div class="error-page">
-            <h2>Error ${msg} occurred</h2>
-            <p>${url}:${lineNo}:${columnNo}</p>
-            <p>${errorType}</p>
-            <pre>${stack}</pre>
-            <p>Column Number: ${column_no}</p>
-            <div class="code-block">${codeBlock}</div>
-          </div>
-        `;
-      }
-      console.log("ErrorTrace loaded");
-    };
-  }
-  console.log("ErrorTrace loaded");
-};
-
+ 
+ 
  
  
 
@@ -3143,85 +3100,114 @@ window.ErrorTrace = () => {
     head.appendChild(link);
   }
 
- 
-  const dispose = (path, callback, props = {}) => {
-     if(path.endsWith('.jsx') || path.endsWith('.tsx')){
-      const cacheEntry = cache[path];
-      if (cacheEntry) {
-        const { type, data, componentName } = cacheEntry;
+  let mainhtmlel = document.querySelector("html");
+let renderingtype = mainhtmlel.getAttribute("data-render");
+window.CACHE_EXPIRATION_TIME = 3600000; // 1 hour
+let CACHE_VERSION = localStorage.getItem('dispose_cache_version')  
+window.CACHE_VERSION = CACHE_VERSION;
+let updated = false;
+const updateCacheVersion = (newVersion) => {
+  if (window.localStorage) {
+    const currentVersion = parseInt(localStorage.getItem('dispose_cache_version'));
+    if (!isNaN(currentVersion) && newVersion > currentVersion) {
+      console.log('Clearing cache...');
+      // Clear the entire cache
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('dispose_cache_')) {
+          localStorage.removeItem(key);
+        }
+      }
+
+      // Update the cache version
+      localStorage.setItem('dispose_cache_version', newVersion.toString());
+      window.CACHE_VERSION = newVersion;
+      console.log('Cache cleared.');
+    } else {
+      console.log('Cache version is up to date');
+    }
+  }
+};
+
+window.updateCacheVersion = updateCacheVersion;
+
+
+const dispose = (path, callback, props = {}) => {
+  if (renderingtype === 'cfr' && window.localStorage) {
+    const cachedCode = localStorage.getItem(path);
+    if (cachedCode) {
+      const { type, data, componentName, timestamp, version } = JSON.parse(cachedCode);
+      const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+      if (currentTime - timestamp < window.CACHE_EXPIRATION_TIME && version === CACHE_VERSION) {
         if (type === 'tsx' || type === 'jsx') {
           const func = new Function('props', `
-            return function(props1){
+            return function() {
               ${data}
-              return React.createElement(${componentName}, { ...props, ...props1 })
+              return React.createElement(${componentName}, props)
             }
           `);
           const component = func(props);
           callback(component);
         } else if (type === 'ts') {
           const func = new Function(data);
-  
-     
-          const component = func()(props)
-          console.log(component)
+          const component = func()(props);
           callback(component);
         }
         return;
       }
-    
-      const worker = new Worker(
-        URL.createObjectURL(
-          new Blob([`(${workerFunction.toString()})()`], {
-            type: 'application/javascript',
-          })
-        )
-      );
-    
-      const extension = path.split('.').pop();
-      const presets = ['react'];
-     
-     
-      fetch(path)
-        .then((response) => response.text())
-        .then((code) => {
-          const componentName = path.split('/').pop().split('.')[0];
-          let compiledCode;
-          if (extension === 'ts') {
-            compiledCode = `return (${code})`;
-          } else {
-              
-            compiledCode = Babel.transform(code, { presets }).code;
-          }
-          const cacheEntry = { type: extension, data: compiledCode, componentName };
-          if (extension !== 'ts') {
-            cache[path] = cacheEntry;
-          }
-          const func = new Function('props',`
-            return function(){
-              ${compiledCode}
-              return React.createElement(${componentName}, props)
-            }
-          `);
-          const component = func(props)
-         
-          callback(component);
-          if (extension === 'ts') {
-            cache[path] = cacheEntry;
-            worker.postMessage(code);
-          }
-         
-        });
-        
-      worker.onmessage = (event) => {
-        const { type, data } = event.data;
-        if (type === 'code') {
-          cache[path] = { type: 'ts', data, componentName: cache[path].componentName };
-        }
-      };
     }
-  
+  }
+  const worker = new Worker(
+    URL.createObjectURL(
+      new Blob([`(${workerFunction.toString()})()`], {
+        type: 'application/javascript',
+      })
+    )
+  );
+
+  const extension = path.split('.').pop();
+  const presets = ['react'];
+
+  fetch(path)
+    .then((response) => response.text())
+    .then((code) => {
+      const componentName = path.split('/').pop().split('.')[0];
+      let compiledCode;
+      if (extension === 'ts') {
+        compiledCode = `return (${code})`;
+      } else {
+        compiledCode = Babel.transform(code, { presets }).code;
+        if (renderingtype == 'cfr' && window.localStorage) {
+          const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+          const cacheData = { type: extension, data: compiledCode, componentName, timestamp: currentTime, version: CACHE_VERSION};
+          localStorage.setItem(path, JSON.stringify(cacheData));
+          console.log('Saved to cache');
+        }
+      }
+      const cacheEntry = { type: extension, data: compiledCode, componentName };
+      const func = new Function('props', `
+        return function() {
+          ${compiledCode}
+          return React.createElement(${componentName}, props)
+        }
+      `);
+      const component = func(props);
+      callback(component);
+      if (extension === 'ts') {
+        cache[path] = cacheEntry;
+        worker.postMessage(code);
+      }
+    });
+
+  worker.onmessage = (event) => {
+    const { type, data } = event.data;
+    if (type === 'code') {
+      cache[path] = { type: 'ts', data, componentName: cache[path].componentName };
+    }
   };
-  
+
+}
+   
   const workerFunction = () => {
     onmessage = (event) => {
       importScripts('https://unpkg.com/@babel/standalone/babel.min.js');
@@ -3230,6 +3216,7 @@ window.ErrorTrace = () => {
       postMessage({ type: 'code', data: compiledCode });
     };
   };
+  
   
   window.dispose = dispose;
   
