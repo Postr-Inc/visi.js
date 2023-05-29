@@ -10,25 +10,57 @@ Features:
  
 * Asynchronous component compiling system. 
 * Parrallel data handling using lazy-javascript and querysharding, 
-* Express.js like routing system!
-* FS using localstorage & Os
+* Express.js like hash router & history router
+* FS using localstorage & Os & sqlstore 
 * cfr (client side fly rendering) - compiles once and renders on the fly!
+
+# new 1.7.6-stable
+* added  notifier class for web notifications & push notifications aswell as a ReactRouter_v2 which uses history routing
  
-
-# New
-* cfr is avalible heres how to get started it allows you to compile once and render on the fly! just set `data-render="cfr"` on your html tag and visi will do the rest! - cfr clears cache every 2 minutes!
-```html
-<html lang="en" data-env="production" data-render="cfr">
-```
-you can manage the cfr cache time and version in your index.js file
 ```js
-window.CACHE_EXPIRATION_TIME = 120;
-window.updateCacheVersion(2) // new version
-```
+ let eventType = "newMessage";
+notifier.subscribe(eventType, (notification) => {
+  console.log("New notification:", notification);
+});
+notifier.handleNotificationClick = (event) => {
+  console.log("Notification clicked:", event.notification);
+};
+notifier.handleNotificationClose = (event) => {
+  console.log("Notification closed:", event.notification);
+};
 
+// Triggering a notification
+notifier.send("New message received!", { body: "Click to view.", icon: "notification.png" });
+
+// react router v2
+const app = new  ReactRouter_v2();
+app.init('#app');
+app.use('/', (req, res) => {
+      res.send('Hello World!');
+      // Handle the home route
+      console.log('Home route matched!');
+ });
+    
+     
+app.use('/about', (req, res) => {
+      res.send('About page');
+      // Handle the about route
+      console.log('About route matched!');
+});
+    
+
+app.navigateTo('/');
+app.navigateTo('/about');
+
+app.on('routeChange', (route, params) => {
+      console.log('Route changed:', route);
+      console.log('Params:', params);
+});
+ 
+```
 # soon
-* sse rendering maybe 
-* file based routing any jsx tsx or html page in the pages folder will be rendered as a route
+* sse rendering -> one & off compiling user sends sse connection server renders and sends back to client
+ 
 
 [Website](https://postr-inc.github.io/visi.js/#/) | [Docs](https://postr-inc.gitbook.io/visi.js-docs/)
 | [Discord](https://discord.gg/RGYQKENTRk)
