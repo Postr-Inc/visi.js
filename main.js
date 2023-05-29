@@ -17,8 +17,24 @@ app.on('/team', (req, res)=>{
         res.jsx(<Team/>)
     })
 })
+    
+    app.get('/team', (req, res)=>{
+    dispose('./views/team.jsx', (Team) =>{
+        res.title("Team")
+        res.return()
+        res.jsx(<Team/>)
+    })
+})
 
 app.on('/', (req, res)=>{
+    dispose('./views/main.jsx', (Main) =>{
+        res.title("Home")
+        res.return()
+        res.jsx(<Main/>)
+    })
+})
+    
+    app.get('/', (req, res)=>{
     dispose('./views/main.jsx', (Main) =>{
         res.title("Home")
         res.return()
@@ -35,6 +51,20 @@ app.on("/releases", (req, res) =>{
 })
 
 app.on('/showcase', (req, res)=>{
+    dispose('./views/showcase.jsx', (Showcase) =>{
+        res.title("Showcase")
+        res.return()
+        res.jsx(<Showcase/>)
+    })
+})
+    app.get("/releases", (req, res) =>{
+    dispose('./views/releases.jsx', (Releases) =>{
+        res.title("Releases")
+        res.return()
+        res.jsx(<Releases/>)
+    })
+})
+app.get('/showcase', (req, res)=>{
     dispose('./views/showcase.jsx', (Showcase) =>{
         res.title("Showcase")
         res.return()
