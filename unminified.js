@@ -1,10 +1,3 @@
-// lazy js
-
-
-let mui = false
-window.muiprod = false
-let c  = caches
-
 class Lazy {
   
     constructor(arr) {
@@ -400,7 +393,7 @@ window.help = {
       "@three.js":"https://threejs.org/docs/index.html#manual/en/introduction/Installation",
       "@mastercss":"https://mastercss.js.org/docs/installation",
    
-        "frameworls":{
+        "frameworks":{
            "@lit-js":"https://lit.dev/docs/getting-started/",
         },
  
@@ -409,112 +402,234 @@ window.help = {
     }
   }  
 }
+ // Define the wrapper object
+export const SQLStore = {
+  tables: {},
 
-class Vistore {
-  constructor(dbName) {
-    this.store = {};
-    this.triggers = {};
-    this.subscribers = {};
-    this.dbName = dbName;
-    this.db = null;
-    this.openDatabase();
-  }
-
-  openDatabase() {
-    const request = indexedDB.open(this.dbName);
-
-    request.onupgradeneeded = (event) => {
-      this.db = event.target.result;
-      this.createObjectStore();
-    };
-
-    request.onsuccess = (event) => {
-      this.db = event.target.result;
-      this.retrieveData();
-    };
-
-    request.onerror = (event) => {
-      console.error('Error opening IndexedDB database:', event.target.error);
-    };
-  }
-
-  createObjectStore() {
-    const objectStore = this.db.createObjectStore('data', { keyPath: 'key' });
-    objectStore.transaction.oncomplete = () => {
-      console.log('IndexedDB object store created.');
-    };
-  }
-
-  retrieveData() {
-    const transaction = this.db.transaction(['data'], 'readonly');
-    const objectStore = transaction.objectStore('data');
-    const request = objectStore.getAll();
-
-    request.onsuccess = (event) => {
-      const data = event.target.result;
-      data.forEach((item) => {
-        this.store[item.key] = item.value;
-      });
-    };
-
-    request.onerror = (event) => {
-      console.error('Error retrieving data from IndexedDB:', event.target.error);
-    };
-  }
-
-  saveData() {
-    const transaction = this.db.transaction(['data'], 'readwrite');
-    const objectStore = transaction.objectStore('data');
-
-    for (const key in this.store) {
-      const request = objectStore.put({ key, value: this.store[key] });
-
-      request.onerror = (event) => {
-        console.error('Error saving data to IndexedDB:', event.target.error);
+  // Table constructor function
+  Table: function(tableName) {
+    if (!this.tables[tableName]) {
+      this.tables[tableName] = {
+        name: tableName,
+        schema: {},
+        hooks: []
       };
     }
-  }
+    return this.tables[tableName];
+  },
 
-  get(key) {
-    return this.store[key];
-  }
+  // Hook method to register callbacks for a table
+  hook: function(tableName, callback) {
+    const table = this.Table(tableName);
+    table.hooks.push(callback);
+  },
 
-  set(key, value) {
-    this.store[key] = value;
-    if (this.triggers[key]) {
-      this.triggers[key].forEach((trigger) => {
-        trigger();
+  // Create a table with schema
+  createTable: function(tableName, schema) {
+    const tableKey = `${tableName}_table`;
+    if (!localStorage.getItem(tableKey)) {
+      localStorage.setItem(tableKey, JSON.stringify(schema));
+      console.log(`Table '${tableName}' created successfully.`);
+      this.triggerHooks(tableName, 'tableCreated', { schema });
+    } else {
+      console.log(`Table '${tableName}' already exists.`);
+    }
+  },
+
+  // Insert a row into a table
+  insertRow: function(tableName, rowData) {
+    const tableKey = `${tableName}_table`;
+    const schema = JSON.parse(localStorage.getItem(tableKey));
+  
+    if (schema) {
+      const row = {};
+      const errors = [];
+  
+      for (let column in schema) {
+        const columnType = schema[column];
+        if (rowData.hasOwnProperty(column)) {
+          const value = rowData[column];
+  
+          if (typeof value === columnType.toLowerCase()) {
+            row[column] = value;
+          } else {
+            errors.push(`Invalid value type for column '${column}'. Expected '${columnType}'.`);
+          }
+        } else {
+          errors.push(`Missing value for column '${column}'.`);
+        }
+      }
+  
+      if (errors.length === 0) {
+        const dataKey = `${tableName}_data`;
+        const tableData = JSON.parse(localStorage.getItem(dataKey)) || [];
+        tableData.push(row);
+        localStorage.setItem(dataKey, JSON.stringify(tableData));
+  
+        console.log(`Row inserted successfully into '${tableName}'.`);
+        this.triggerHooks(tableName, 'rowInserted', { row });
+      } else {
+        console.error(`Failed to insert row into '${tableName}':`, errors);
+      }
+    } else {
+      console.log(`Table '${tableName}' does not exist.`);
+    }
+  }
+,  
+removeRow: function(tableName, conditions) {
+  const tableKey = `${tableName}_table`;
+  const schema = JSON.parse(localStorage.getItem(tableKey));
+
+  if (schema) {
+    const dataKey = `${tableName}_data`;
+    let tableData = JSON.parse(localStorage.getItem(dataKey)) || [];
+
+    const filteredData = tableData.filter(row => {
+      for (let column in conditions) {
+        if (row[column] !== conditions[column]) {
+          return true;
+        }
+      }
+      return false;
+    });
+
+    if (filteredData.length !== tableData.length) {
+      localStorage.setItem(dataKey, JSON.stringify(filteredData));
+      console.log(`Removed row(s) from '${tableName}'.`);
+      this.triggerHooks(tableName, 'rowRemoved', { conditions });
+    } else {
+      console.log(`No matching rows found in '${tableName}'.`);
+    }
+  } else {
+    console.log(`Table '${tableName}' does not exist.`);
+  }
+},
+
+// Remove a table
+removeTable: function(tableName) {
+  const tableKey = `${tableName}_table`;
+  if (localStorage.getItem(tableKey)) {
+    localStorage.removeItem(tableKey);
+    localStorage.removeItem(`${tableName}_data`);
+    delete this.tables[tableName];
+    console.log(`Table '${tableName}' and associated data removed.`);
+    this.triggerHooks(tableName, 'tableRemoved', {});
+  } else {
+    console.log(`Table '${tableName}' does not exist.`);
+  }
+},
+
+  // Select rows from a table based on conditions
+  selectRows: function(tableName, conditions) {
+    const tableKey = `${tableName}_table`;
+    const schema = JSON.parse(localStorage.getItem(tableKey));
+
+    if (schema) {
+      const dataKey = `${tableName}_data`;
+      const tableData = JSON.parse(localStorage.getItem(dataKey)) || [];
+
+      const matchedRows = tableData.filter(row => {
+        for (let column in conditions) {
+          if (row[column] !== conditions[column]) {
+            return false;
+          }
+        }
+        return true;
       });
-    }
-    this.saveData();
-  }
 
-  trigger(key) {
-    if (this.subscribers[key]) {
-      this.subscribers[key].forEach((subscriber) => {
-        subscriber(this.store[key]);
-      });
+      console.log(`Selected ${matchedRows.length} rows from '${tableName}'.`);
+      this.triggerHooks(tableName, 'rowsSelected', { rows: matchedRows });
+    } else {
+      console.log(`Table '${tableName}' does not exist.`);
     }
-  }
+  },
 
-  subscribe(key, callback) {
-    if (!this.subscribers[key]) {
-      this.subscribers[key] = [];
-    }
-    this.subscribers[key].push(callback);
-  }
+  // View the schema of a table
+  viewSchema: function(tableName) {
+    const tableKey = `${tableName}_table`;
+    const schema = JSON.parse(localStorage.getItem(tableKey));
 
-  unsubscribe(key, callback) {
-    if (this.subscribers[key]) {
-      this.subscribers[key] = this.subscribers[key].filter(
-        (subscriber) => subscriber !== callback
-      );
+    if (schema) {
+      console.log(`Schema of table '${tableName}':`, schema);
+    } else {
+      console.log(`Table '${tableName}' does not exist.`);
     }
+  },
+  // Update rows in a table based on conditions
+updateRows: function(tableName, conditions, newData) {
+  const tableKey = `${tableName}_table`;
+  const schema = JSON.parse(localStorage.getItem(tableKey));
+
+  if (schema) {
+    const dataKey = `${tableName}_data`;
+    let tableData = JSON.parse(localStorage.getItem(dataKey)) || [];
+
+    let updatedRows = 0;
+
+    tableData = tableData.map(row => {
+      let isMatched = true;
+      for (let column in conditions) {
+        if (row[column] !== conditions[column]) {
+          isMatched = false;
+          break;
+        }
+      }
+
+      if (isMatched) {
+        for (let column in newData) {
+          if (schema.hasOwnProperty(column)) {
+            const columnType = schema[column];
+            const value = newData[column];
+
+            if (typeof value === columnType.toLowerCase()) {
+              row[column] = value;
+            } else {
+              console.error(`Invalid value type for column '${column}'. Expected '${columnType}'.`);
+            }
+          } else {
+            console.error(`Column '${column}' does not exist in table '${tableName}'.`);
+          }
+        }
+        updatedRows++;
+      }
+
+      return row;
+    });
+
+    if (updatedRows > 0) {
+      localStorage.setItem(dataKey, JSON.stringify(tableData));
+      console.log(`Updated ${updatedRows} row(s) in '${tableName}'.`);
+      this.triggerHooks(tableName, 'rowsUpdated', { conditions, newData });
+    } else {
+      console.log(`No matching rows found in '${tableName}'.`);
+    }
+  } else {
+    console.log(`Table '${tableName}' does not exist.`);
   }
+},
+
+  triggerHooks: function(tableName, event, data) {
+    const table = this.tables[tableName];
+    if (table) {
+      table.hooks.forEach(callback => callback(event, data));
+    }
+  },
 }
 
-window.vistore = Vistore
-const fs = {
+// Listen for postMessage events
+window.addEventListener('message', function(event) {
+  const { eventType, data } = event.data;
+  if (eventType && data) {
+    const { tableName } = data;
+    if (tableName) {
+      SQLStore.triggerHooks(tableName, eventType, data);
+    }
+  }
+});
+
+window.SQLStore = SQLStore;
+ 
+export const fs = {
    
   read: (path, compress = false) => {
     return new Promise((resolve, reject) => {
@@ -714,24 +829,35 @@ const fs = {
  
 window.fs = fs;
 
-const os = {
+export const os = {
   cpus: () => {
     return navigator.hardwareConcurrency;
   },
   hostname: () => {
-    return navigator.connection
+    return navigator.userAgent;
   },
   platform: () => {
      let plat = navigator.userAgent 
-      if(plat.includes("Win")){
+    switch (plat) {
+      case plat.includes("Win"):
         return "Windows";
-      }else if(plat.includes("Mac")){
+        break;
+      case plat.includes("Mac"):
         return "MacOS";
-      }else if(plat.includes("Linux")){
+        break;
+      case plat.includes("Linux"):
         return "Linux";
-      }else{
+        break;
+      case plat.includes("Android"):
+        return "Android";
+        break;
+      case plat.includes("iOS"):
+        return "iOS";
+        break;
+      default:
         return "Unknown";
-      }
+        break;
+    }
   },
 
   hardware: async () => {
@@ -752,15 +878,104 @@ const os = {
     return data;
   },
   arch: () => {
-    return "x64";
-  },
+    let platform = navigator.userAgentData 
+    console.log(platform);
+  
+    if (platform === "Win64" || platform === "x86_64" || platform === "x64") {
+      return "x64";
+    } else if (platform === "Win32" || platform === "x86") {
+      return "x32";
+    } else {
+      return "Unknown";
+    }
+  }
+  
 }
+const notifier = {
+  subscribers:  [],
+
+  send: async (message, options) => {
+    if (!("Notification" in window)) {
+      console.error("Notifications are not supported in this browser.");
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === "granted") {
+        const noti = new Notification(message, options);
+        Object.values(notifier.subscribers).forEach((subscribers) => {
+          subscribers.forEach((subscriber) => {
+            subscriber(noti);
+          });
+        });
+      } else {
+        console.error("Notification permission denied.");
+      }
+    } catch (error) {
+      console.error("Failed to request notification permission:", error);
+    }
+  },
+
+  sendPostNotification: async (url, data, options) => {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to send POST notification.");
+      }
+
+      const notificationData = await response.json();
+      const message = notificationData.message;
+      notifier.send(message, options);
+    } catch (error) {
+      console.error("Failed to send POST notification:", error);
+    }
+  },
+
+  subscribe: (eventType, subscriber) => {
+    if (!notifier.subscribers[eventType]) {
+      notifier.subscribers[eventType] = new Set();
+    }
+    notifier.subscribers[eventType].add(subscriber);
+  },
+
+  unsubscribe: (eventType, subscriber) => {
+    if (notifier.subscribers[eventType]) {
+      notifier.subscribers[eventType].delete(subscriber);
+      if (notifier.subscribers[eventType].size === 0) {
+        delete notifier.subscribers[eventType];
+      }
+    }
+  },
+
+  handleNotificationClick: (event, clickCallback) => {
+    if (typeof clickCallback === "function") {
+      event.notification.close();
+      clickCallback(event);
+    }
+  },
+
+  handleNotificationClose: (event, closeCallback) => {
+    if (typeof closeCallback === "function") {
+      closeCallback(event);
+    }
+  }
+};
+
+
 
 window.os = os; 
 
 const containers = {};
 
-let contained = {
+export let contained = {
   newContainer: (id) => {
     if (containers[id]) {
       console.error(`Container with ID '${id}' already exists.`);
@@ -880,8 +1095,6 @@ let contained = {
  
 window.contained = contained;
 
-
-
 window.lib = (path) => {
   if (!path) throw new Error('lib() must be called with a path!');
    
@@ -943,6 +1156,7 @@ window.lib = (path) => {
       
     }
   }
+  
   if (path.startsWith("@tailwind")) {
     path = path.replace("@tailwind/", "");
     path = path.replace("/", ",");
@@ -1242,663 +1456,18 @@ window.JsonHandler = JsonHandler;
 export class ReactRouter {
     constructor() {
       this.routes = {};
-      this.currentUrl = '';
+      this.currentUrl =   ''
       this.store = {};
       this.rootElement = null;
       this.hashChangeListener = null;
-      let storedroutes = []
       this.listeners =  {}
-      window.addEventListener('message', this.handleMessage.bind(this));
+      this.storedroutes = []
+      this.errorcheck = null;
+      this.headers = {}
     }
   
-    route(path) {
-      this.routes[path] = true;
-    }
-    root(path, callback) {
-      const paramNames = [];
-      const queryNames = [];
-      window.location.hash = path;
-      const parsedPath = path.split('/').map(part => {
-        if (part.startsWith(':')) {
-          paramNames.push(part.substring(1));
-          return '([^/]+)';
-        }
-        if (part.startsWith('*')) {
-          paramNames.push(part.substring(1));
-          return '(.*)';
-        }
-        if (part.startsWith('?')) {
-          queryNames.push(part.substring(1));
-          return '([^/]+)';
-        }
-        return part;
-      }).join('/');
-      const regex = new RegExp('^' + parsedPath + '(\\?(.*))?$');
-  
-      this.routes[path] = true;
-  
-      this.currentUrl = path;
-  
-      if (window.location.hash.substring(1).match(regex)) {
-        const matches = window.location.hash.substring(1).match(regex);
-        const params = {};
-  
-        for (let i = 0; i < paramNames.length; i++) {
-          params[paramNames[i]] = matches[i + 1];
-        }
-        if (path.includes(":") && window.location.hash.substring(1).split("?")[1]) {
-          console.error("Cannot use query params with path params", path, window.location.hash.substring(1).split("?")[1]);
-          return false;
-        }
-        const query = {};
-  
-        const queryString = window.location.hash.substring(1).split('?')[1];
-        if (queryString) {
-          const queryParts = queryString.split('&');
-          for (let i = 0; i < queryParts.length; i++) {
-            const queryParam = queryParts[i].split('=');
-            query[queryParam[0]] = queryParam[1];
-          }
-        }
-        const req = {
-          "params": params,
-          "query": query,
-          "url": window.location.hash.substring(1),
-          "method": "ROOT_GET",
-        }
-  
-  
-  
-  
-        let hooked = false;
-        const res = {
-          json: (data) => {
-            if (hooked) {
-              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
-            }
-            try {
-              const jsonData = JSON.stringify(data);
-              const html = `<pre>${jsonData}</pre>`;
-              document.getElementById(this.rootElement).innerHTML = html;
-              hooked = true;
-            } catch (e) {
-              throw new Error("Invalid JSON data");
-            }
-          },
-           
-          setCookie: (name, value, options) => {
-            if (hooked) {
-              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
-            }
-            let cookieString = `${name}=${value};`;
-            if (options) {
-              if (options.path) {
-                cookieString += `path=${options.path};`;
-              }
-              if (options.domain) {
-                cookieString += `domain=${options.domain};`;
-              }
-              if (options.maxAge) {
-                cookieString += `max-age=${options.maxAge};`;
-              }
-              if (options.httpOnly) {
-                cookieString += `httpOnly=${options.httpOnly};`;
-              }
-              if (options.secure) {
-                cookieString += `secure=${options.secure};`;
-              }
-              if (options.sameSite) {
-                cookieString += `sameSite=${options.sameSite};`;
-              }
-            }
-            document.cookie = cookieString;
-  
-          },
-          getCookie: (name) => {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-              const cookie = cookies[i].trim();
-              const cookieName = cookie.split('=')[0];
-              if (cookieName === name) {
-                const cookieValue = cookie.split('=')[1];
-                const cookieOptions = cookie.split(';').slice(1).map(option => {
-                  const [key, value] = option.split('=').map(str => str.trim());
-                  return { [key]: value };
-                }).reduce((acc, curr) => Object.assign(acc, curr), {});
-                return {
-                  name: cookieName,
-                  value: cookieValue
-                };
-              }
-            }
-            return null;
-          },
-  
-  
-          title: (title) => {
-            if (hooked) {
-              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
-            }
-            document.title = title;
-            hooked = true;
-          },
-          saveState: () => {
-            if (hooked) {
-              throw new Error("State has already been saved cannot save again");
-            }
-            const route = window.location.hash.substring(1);
-            console.log(route);
-            // save the current route in history
-            if (window.sessionStorage.getItem(route)) {
-              window.location.hash = window.sessionStorage.getItem(route);
-              console.log(window.sessionStorage.getItem(route));
-            } else {
-              window.sessionStorage.setItem(route, route);
-              console.log(window.sessionStorage.getItem(route));
-            }
-            hooked = true;
-  
-          },
-          ip: () => {
-            if (hooked) {
-              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
-            }
-            hooked = true;
-            return fetch('https://api.ipify.org?format=json').then(res => res.json()).then(data => {
-      
-              return data.ip;
-            });
-          },
-          restoreState: () => {
-            if (hooked) {
-              throw new Error("State has already been restored cannot restore again");
-            }
-            // restore the current route in history
-            let route = window.location.hash.substring(1);
-            if (window.sessionStorage.getItem(route)) {
-              window.location.hash = window.sessionStorage.getItem(route);
-              console.log('restoring route', window.sessionStorage.getItem(route));
-            } else {
-              window.location.hash = this.currentUrl;
-              console.log("no route found");
-            }
-            hooked = true;
-          },
-          send: (data) => {
-            if (hooked) {
-              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
-            }
-            document.getElementById(this.rootElement).innerHTML = data;
-            hooked = true;
-          },
-          jsx: (data) => {
-            if (hooked) {
-              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
-            }
-              
-            window.React._render(data)(this.rootElement);
-            hooked = true;
-          },
-          return: () => {
-            if (hooked) {
-              hooked = false;
-            }
-            if (this.hashChangeListener) {
-              window.removeEventListener("hashchange", this.hashChangeListener);
-              this.hashChangeListener = null;
-              console.log("removed last event listener")
-            }
-          },
-          sendStatus: (msg, code) => {
-            if (hooked) {
-              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
-            }
-  
-            if (typeof code === 'number') {
-              document.getElementById(this.rootElement).innerHTML =   JSON.stringify({msg, code});
-              hooked = true;
-            } else {
-              throw new Error("Invalid status code");
-            }
-  
-  
-  
-          },
-          markdown: (data, type = null) => {
-            if (hooked) {
-              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
-            }
-            import('https://cdn.jsdelivr.net/npm/marked/marked.min.js').then(module => {
-              if(type == "path"){
-                fetch(data)
-                .then(response => response.text())
-                .then(text => {
-                    document.getElementById(this.rootElement).innerHTML = marked.parse(text);
-                });
-            }else{
-                document.getElementById(this.rootElement).innerHTML = marked.parse(data);
-            }
-            });
-            
-          },
-          redirect: (url) => {
-  
-            if (hooked) {
-              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
-            }
-            window.location.hash = url;
-            hooked = true;
-  
-          },
-          compress : async (data) => {
-            
-           const promise = new Promise((resolve, reject) => {
-            import("https://unpkg.com/pako@2.1.0/dist/pako.min.js").then(module => {
-              console.log("pako loaded");
-              const inputUint8Array = new TextEncoder().encode(data);
-              const compressedUint8Array = pako.gzip(inputUint8Array);
-              resolve(compressedUint8Array);
-             
-            });
-           
-             
-           });
-            return promise;
-          },
-          
-          // Decompress data using pako
-           decompress : async (data) => {
-            return new Promise((resolve, reject) => {
-              import("https://unpkg.com/pako@2.1.0/dist/pako.min.js").then(module => {
-                const compressedUint8Array = new Uint8Array(data);
-                const decompressedUint8Array = pako.inflate(compressedUint8Array);
-                const result = new TextDecoder().decode(decompressedUint8Array);
-                resolve(result);
-              });
-          
-            });
-          },
-           
-          sendFile: (file) => {
-            let element = this.rootElement
-            if (hooked) {
-              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
-            }
-  
-            let xhr = new XMLHttpRequest();
-                  xhr.open('GET', file);
-                  xhr.responseType = 'blob';
-                  xhr.onload = function () {
-                    if (file.endsWith(".png" || ".jpg" || ".jpeg" || ".gif" || ".svg" || ".ico")) {
-                      document.getElementById(element).innerHTML = `<img src="${file}" />`;
-                    } else if (file.endsWith(".json") ) {
-                      fetch(file)
-                        .then(response => response.json())
-                        .then(data => {
-                          const jsonData = JSON.stringify(data);
-                          const html = `<textarea style="width:100%;height:100%; resize:none; border:none;">${jsonData}</textarea>`
-                          document.getElementById(element).innerHTML = html;
-                        })
-                    }else if (file.endsWith(".js") ) {
-                      fetch(file)
-                        .then(response => response.text())
-                        .then(data => {
-                          const html = `<textarea style="width:100%;height:100%; resize:none; border:none;">${data}</textarea>`
-                          document.getElementById(element).innerHTML = html;
-                        })
-                    }else if (file.endsWith(".css") ) {
-                      fetch(file)
-                        .then(response => response.text())
-                        .then(data => {
-                          const html = `<textarea style="width:100%;height:100%; resize:none; border:none;">${data}</textarea>`
-                          document.getElementById(element).innerHTML = html;
-                        })
-                    }else if (file.endsWith(".html") ) {
-                      fetch(file)
-                        .then(response => response.text())
-                        .then(data => {
-                          const html = `<textarea style="width:100%;height:100%; resize:none; border:none;">${data}</textarea>`
-                          document.getElementById(element).innerHTML = html;
-                        })
-                      }else if (file.endsWith(".img") || file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".gif") || file.endsWith(".svg") || file.endsWith(".ico")) {
-                        document.getElementById(element).innerHTML =    `
-                        <img src="${file}" 
-                        
-                        style="width:100%;height:100%; resize:none; border:none; position:absolute; top:0; left:0;"
-                         
-                        />
-                        `
-                      }else if(file.endsWith(".pdf")){
-                        document.getElementById(element).innerHTML =    `
-                        <embed src="${file}" 
-                        
-                        style="width:100%;height:100%; resize:none; border:none; position:absolute; top:0; left:0;"
-                         
-                        />
-                        `
-                      }else if (file.endsWith('.mp4') || file.endsWith('.webm') || file.endsWith('.ogg')) {
-                        let video = document.createElement('video');
-                        video.src = file;
-                        video.controls = true;
-                        document.getElementById(element).appendChild(video);
-                      }else{
-                        let audio = document.createElement('audio');
-                        audio.src = file;
-                        audio.controls = true;
-                        document.getElementById(element).appendChild(audio);
-                      }
-                    let a = document.createElement('a');
-                    a.href = window.URL.createObjectURL(xhr.response);
-                    a.download = file;
-                    a.click();
-                  };
-                  xhr.send();
-          }
-  
-        }
-        if (!this.hashChangeListener) {
-          this.hashChangeListener = () => {
-            if (window.location.hash.substring(1).match(regex)) {
-              const matches = window.location.hash.substring(1).match(regex);
-              const params = {};
-              for (let i = 0; i < paramNames.length; i++) {
-                params[paramNames[i]] = matches[i + 1];
-              }
-  
-              const req = {
-                params: params,
-                rootUrl: this.currentUrl,
-                url: window.location.hash.substring(1),
-              };
-  
-              const res = {
-                json: (data) => {
-                  if (hooked) {
-                    throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
-                  }
-                  try {
-                    const jsonData = JSON.stringify(data);
-                    const html = `<pre>${jsonData}</pre>`;
-                    document.getElementById(this.rootElement).innerHTML = html;
-                    hooked = true;
-                  } catch (e) {
-                    throw new Error("Invalid JSON data");
-                  }
-                },
-                title: (title) => {
-                  if (hooked) {
-                    throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
-                  }
-                  document.title = title;
-                  hooked = true;
-                },
-                saveState: () => {
-                  if (hooked) {
-                    throw new Error("State has already been saved cannot save again");
-                  }
-                  const route = window.location.hash.substring(1);
-                  // save the current route in history
-                  if (window.sessionStorage.getItem(route)) {
-                    window.location.hash = window.sessionStorage.getItem(route);
-                  } else {
-                    window.sessionStorage.setItem(route, route);
-                  }
-                  hooked = true;
-  
-                },
-                compress : async (data) => {
-            
-                  const promise = new Promise((resolve, reject) => {
-                   import("https://unpkg.com/pako@2.1.0/dist/pako.min.js").then(module => {
-                     console.log("pako loaded");
-                     const inputUint8Array = new TextEncoder().encode(data);
-                     const compressedUint8Array = pako.gzip(inputUint8Array);
-                     resolve(compressedUint8Array);
-                    
-                   });
-                  
-                    
-                  });
-                   return promise;
-                 },
-                 
-                 // Decompress data using pako
-                  decompress : async (data) => {
-                   return new Promise((resolve, reject) => {
-                     import("https://unpkg.com/pako@2.1.0/dist/pako.min.js").then(module => {
-                       const compressedUint8Array = new Uint8Array(data);
-                       const decompressedUint8Array = pako.inflate(compressedUint8Array);
-                       const result = new TextDecoder().decode(decompressedUint8Array);
-                       resolve(result);
-                     });
-                 
-                   });
-                 },
-                 markdown: (data, type = null) => {
-                  if (hooked) {
-                    throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
-                  }
-                  import('https://cdn.jsdelivr.net/npm/marked/marked.min.js').then(module => {
-                    if(type == "path"){
-                      fetch(data)
-                      .then(response => response.text())
-                      .then(text => {
-                          document.getElementById(this.rootElement).innerHTML = marked.parse(text);
-                      });
-                  }else{
-                      document.getElementById(this.rootElement).innerHTML = marked.parse(data);
-                  }
-                  });
-                  
-                },
-                restoreState: () => {
-                  if (hooked) {
-                    throw new Error("State has already been restored cannot restore again");
-                  }
-                  // restore the current route in history
-                  let route = window.location.hash.substring(1);
-                  if (window.sessionStorage.getItem(route)) {
-                    window.location.hash = window.sessionStorage.getItem(route);
-                  } else {
-                    window.location.hash = this.currentUrl;
-                  }
-                  hooked = true;
-                },
-                send: (data) => {
-                  if (hooked) {
-                    throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
-                  }
-                  document.getElementById(this.rootElement).innerHTML = data;
-                  hooked = true;
-                },
-                jsx: (data) => {
-                  if (hooked) {
-                    throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
-                  }
-                   
-                  window.React._render(data)(this.rootElement);
-                 
-                  hooked = true;
-                },
-                return: () => {
-                  if (hooked) {
-                    hooked = false;
-                  }
-                  if (this.hashChangeListener) {
-                    window.removeEventListener("hashchange", this.hashChangeListener);
-                    this.hashChangeListener = null;
-                    console.log("removed last event listener")
-                  }
-                },
-                sendStatus: (msg, code) => {
-                  if (hooked) {
-                    throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
-                  }
-        
-                  if (typeof code === 'number') {
-                    document.getElementById(this.rootElement).innerHTML =   JSON.stringify({msg, code});
-                    hooked = true;
-                  } else {
-                    throw new Error("Invalid status code");
-                  }
-        
-        
-        
-                },
-                redirect: (url) => {
-  
-                  if (hooked) {
-                    throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
-                  }
-                  window.location.hash = url;
-                  hooked = true;
-  
-                },
-                sendFile: (file) => {
-                  let element = this.rootElement
-                  if (hooked) {
-                    throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
-                  }
-                  let xhr = new XMLHttpRequest();
-                  xhr.open('GET', file);
-                  xhr.responseType = 'blob';
-                  xhr.onload = function () {
-                    if (file.endsWith(".png" || ".jpg" || ".jpeg" || ".gif" || ".svg" || ".ico")) {
-                      document.getElementById(element).innerHTML = `<img src="${file}" />`;
-                    } else if (file.endsWith(".json") ) {
-                      fetch(file)
-                        .then(response => response.json())
-                        .then(data => {
-                          const jsonData = JSON.stringify(data);
-                          const html = `<textarea style="width:100%;height:100%; resize:none; border:none;">${jsonData}</textarea>`
-                          document.getElementById(element).innerHTML = html;
-                        })
-                    }else if (file.endsWith(".js") ) {
-                      fetch(file)
-                        .then(response => response.text())
-                        .then(data => {
-                          const html = `<textarea style="width:100%;height:100%; resize:none; border:none;">${data}</textarea>`
-                          document.getElementById(element).innerHTML = html;
-                        })
-                    }else if (file.endsWith(".css") ) {
-                      fetch(file)
-                        .then(response => response.text())
-                        .then(data => {
-                          const html = `<textarea style="width:100%;height:100%; resize:none; border:none;">${data}</textarea>`
-                          document.getElementById(element).innerHTML = html;
-                        })
-                    }else if (file.endsWith(".html") ) {
-                      fetch(file)
-                        .then(response => response.text())
-                        .then(data => {
-                          const html = `<textarea style="width:100%;height:100%; resize:none; border:none;">${data}</textarea>`
-                          document.getElementById(element).innerHTML = html;
-                        })
-                      }else if (file.endsWith(".img") || file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".gif") || file.endsWith(".svg") || file.endsWith(".ico")) {
-                        document.getElementById(element).innerHTML =    `
-                        <img src="${file}" 
-                        
-                        style="width:100%;height:100%; resize:none; border:none; position:absolute; top:0; left:0;"
-                         
-                        />
-                        `
-                      }else if(file.endsWith(".pdf")){
-                        document.getElementById(element).innerHTML =    `
-                        <embed src="${file}" 
-                        
-                        style="width:100%;height:100%; resize:none; border:none; position:absolute; top:0; left:0;"
-                         
-                        />
-                        `
-                      }else if (file.endsWith('.mp4') || file.endsWith('.webm') || file.endsWith('.ogg')) {
-                        let video = document.createElement('video');
-                        video.src = file;
-                        video.controls = true;
-                        document.getElementById(element).appendChild(video);
-                      }else{
-                        let audio = document.createElement('audio');
-                        audio.src = file;
-                        audio.controls = true;
-                        document.getElementById(element).appendChild(audio);
-                      }
-                    let a = document.createElement('a');
-                    a.href = window.URL.createObjectURL(xhr.response);
-                    a.download = file;
-                    a.click();
-                  };
-                  xhr.send();
-                  hooked = true;
-                 
-                }
-  
-              }
-  
-              callback(req, res);
-            }
-          };
-  
-          window.addEventListener("hashchange", this.hashChangeListener);
-        }
-  
-        callback(req, res);
-  
-        return true;
-      }
-  
-      return false;
-    }
-    
-    post(path, data, headers = {}) {
-      const message = {
-        path: path,
-        data: data,
-        headers: headers
-      };
-  
-      // Send the message to the target file
-      window.postMessage(message, '*');
-    }
-  
-    listen() {
-      const self = this;
-  
-      return {
-        post: (callback) => {
-          const listenerId = Date.now().toString();
-          self.listeners[listenerId] = callback;
-  
-          return () => {
-            delete self.listeners[listenerId];
-          };
-        }
-      };
-    }
-  
-    handleMessage(event) {
-      const message = event.data;
-      const path = message.path;
-      const data = message.data;
-      const headers = message.headers;
-  
-      // Check if there are listeners for the given path
-      if (this.listeners[path]) {
-        // Execute the listeners with the received data and headers
-        this.listeners[path](data, headers);
-      }
-    }
-  
-  
-    bindRoot(element) {
-      this.rootElement = element
-    }
-  
-    onload(callback) {
-      window.onload = () => {
-        // domcontentloaded
-        window.addEventListener("DOMContentLoaded", callback())
-      }
-    }
     get(path, callback) {
+       
       const paramNames = [];
       const queryNames = [];
       const parsedPath = path.split('/').map(part => {
@@ -1917,17 +1486,17 @@ export class ReactRouter {
         return part;
       }).join('/');
       const regex = new RegExp('^' + parsedPath + '(\\?(.*))?$');
-  
-      this.routes[path] = true;
-  
-      this.currentUrl = path;
-  
+       
+
+     
       if (window.location.hash.substring(1).match(regex)) {
+        this.storedroutes.push( window.location.hash.substring(1))
+        this.routes[path] = true
         const matches = window.location.hash.substring(1).match(regex);
         const params = {};
-  
+         
         for (let i = 0; i < paramNames.length; i++) {
-          params[paramNames[i]] = matches[i + 1];
+          para.ms[paramNames[i]] = matches[i + 1];
         }
         if (path.includes(":") && window.location.hash.substring(1).split("?")[1]) {
           console.error("Cannot use query params with path params", path, window.location.hash.substring(1).split("?")[1]);
@@ -2549,6 +2118,832 @@ export class ReactRouter {
       console.log("Router is already initialized");
       return false;
     }
+    error(callback) {
+    let hooked = false;
+     window.onhashchange = () => {
+      if(!this.storedroutes.includes(window.location.hash.substring(1))){
+         const res = {
+            sendStatus: (msg, code) => {
+              if(hooked) throw new Error("Cannot send file after headers have already been sent");
+              if (typeof code === 'number') {
+                document.getElementById(this.rootElement).innerHTML =   JSON.stringify({msg, code});
+                hooked = true;
+              } else {
+                throw new Error("Invalid status code");
+              }
+            },
+            send: (data) => {
+              if(hooked) throw new Error("Cannot send file after headers have already been sent");
+              document.getElementById(this.rootElement).innerHTML = data;
+              hooked = true;
+            },
+            jsx: (data) => {
+              if(hooked) throw new Error("Cannot send file after headers have already been sent");
+              window.React._render(data)(this.rootElement);
+              hooked = true;
+            },
+            sendFile: (file) => {
+              if(hooked) throw new Error("Cannot send file after headers have already been sent");
+              if(!file.endsWith('.html'))  throw new Error("Cannot send file that is not html");
+              fetch(file)
+                .then(response => response.text())
+                .then(data => {
+                  document.getElementById(this.rootElement).innerHTML = data;
+                }
+                )
+                hooked = true;
+              },
+
+              return: () => {
+                if (hooked) {
+                  hooked = false;
+                }
+                if (this.hashChangeListener) {
+                  window.removeEventListener("hashchange", this.hashChangeListener);
+                  this.hashChangeListener = null;
+                  console.log("removed last event listener")
+                }
+              },
+             
+            
+              
+         }
+         callback(res)
+        
+      }
+      
+     }
+     if(!this.storedroutes.includes(window.location.hash.substring(1))){
+      callback()
+    }
+
+      
+    }
+    root(path, callback) {
+      const paramNames = [];
+      const queryNames = [];
+      const currentPath = window.location.hash.substring(1);
+      this.storedroutes.forEach(route => {
+        route  == currentPath ? this.routes[route] = true  ? this.errorcheck = null :  this.errorcheck = true :  window.location.hash = path
+        
+      })
+      const parsedPath = path.split('/').map(part => {
+        if (part.startsWith(':')) {
+          paramNames.push(part.substring(1));
+          return '([^/]+)';
+        }
+        if (part.startsWith('*')) {
+          paramNames.push(part.substring(1));
+          return '(.*)';
+        }
+        if (part.startsWith('?')) {
+          queryNames.push(part.substring(1));
+          return '([^/]+)';
+        }
+        return part;
+      }).join('/');
+      const regex = new RegExp('^' + parsedPath + '(\\?(.*))?$');
+  
+      this.routes[path] = true;
+  
+      this.currentUrl = path;
+  
+      if (window.location.hash.substring(1).match(regex)) {
+        const matches = window.location.hash.substring(1).match(regex);
+        const params = {};
+  
+        for (let i = 0; i < paramNames.length; i++) {
+          params[paramNames[i]] = matches[i + 1];
+        }
+        if (path.includes(":") && window.location.hash.substring(1).split("?")[1]) {
+          console.error("Cannot use query params with path params", path, window.location.hash.substring(1).split("?")[1]);
+          return false;
+        }
+        const query = {};
+  
+        const queryString = window.location.hash.substring(1).split('?')[1];
+        if (queryString) {
+          const queryParts = queryString.split('&');
+          for (let i = 0; i < queryParts.length; i++) {
+            const queryParam = queryParts[i].split('=');
+            query[queryParam[0]] = queryParam[1];
+          }
+        }
+        const req = {
+          "params": params,
+          "query": query,
+          "url": window.location.hash.substring(1),
+          "method": "ROOT_GET",
+        }
+  
+  
+  
+  
+        let hooked = false;
+        const res = {
+          json: (data) => {
+            if (hooked) {
+              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+            }
+            try {
+              const jsonData = JSON.stringify(data);
+              const html = `<pre>${jsonData}</pre>`;
+              document.getElementById(this.rootElement).innerHTML = html;
+              hooked = true;
+            } catch (e) {
+              throw new Error("Invalid JSON data");
+            }
+          },
+           
+          setCookie: (name, value, options) => {
+            if (hooked) {
+              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+            }
+            let cookieString = `${name}=${value};`;
+            if (options) {
+              if (options.path) {
+                cookieString += `path=${options.path};`;
+              }
+              if (options.domain) {
+                cookieString += `domain=${options.domain};`;
+              }
+              if (options.maxAge) {
+                cookieString += `max-age=${options.maxAge};`;
+              }
+              if (options.httpOnly) {
+                cookieString += `httpOnly=${options.httpOnly};`;
+              }
+              if (options.secure) {
+                cookieString += `secure=${options.secure};`;
+              }
+              if (options.sameSite) {
+                cookieString += `sameSite=${options.sameSite};`;
+              }
+            }
+            document.cookie = cookieString;
+  
+          },
+          getCookie: (name) => {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              const cookieName = cookie.split('=')[0];
+              if (cookieName === name) {
+                const cookieValue = cookie.split('=')[1];
+                const cookieOptions = cookie.split(';').slice(1).map(option => {
+                  const [key, value] = option.split('=').map(str => str.trim());
+                  return { [key]: value };
+                }).reduce((acc, curr) => Object.assign(acc, curr), {});
+                return {
+                  name: cookieName,
+                  value: cookieValue
+                };
+              }
+            }
+            return null;
+          },
+  
+  
+          title: (title) => {
+            if (hooked) {
+              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+            }
+            document.title = title;
+            hooked = true;
+          },
+          saveState: () => {
+            if (hooked) {
+              throw new Error("State has already been saved cannot save again");
+            }
+            const route = window.location.hash.substring(1);
+            console.log(route);
+            // save the current route in history
+            if (window.sessionStorage.getItem(route)) {
+              window.location.hash = window.sessionStorage.getItem(route);
+              console.log(window.sessionStorage.getItem(route));
+            } else {
+              window.sessionStorage.setItem(route, route);
+              console.log(window.sessionStorage.getItem(route));
+            }
+            hooked = true;
+  
+          },
+          ip: () => {
+            if (hooked) {
+              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+            }
+            hooked = true;
+            return fetch('https://api.ipify.org?format=json').then(res => res.json()).then(data => {
+      
+              return data.ip;
+            });
+          },
+          restoreState: () => {
+            if (hooked) {
+              throw new Error("State has already been restored cannot restore again");
+            }
+            // restore the current route in history
+            let route = window.location.hash.substring(1);
+            if (window.sessionStorage.getItem(route)) {
+              window.location.hash = window.sessionStorage.getItem(route);
+              console.log('restoring route', window.sessionStorage.getItem(route));
+            } else {
+              window.location.hash = this.currentUrl;
+              console.log("no route found");
+            }
+            hooked = true;
+          },
+          send: (data) => {
+            if (hooked) {
+              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+            }
+            document.getElementById(this.rootElement).innerHTML = data;
+            hooked = true;
+          },
+          jsx: (data) => {
+            if (hooked) {
+              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+            }
+              
+            window.React._render(data)(this.rootElement);
+            hooked = true;
+          },
+          return: () => {
+            if (hooked) {
+              hooked = false;
+            }
+            if (this.hashChangeListener) {
+              window.removeEventListener("hashchange", this.hashChangeListener);
+              this.hashChangeListener = null;
+              console.log("removed last event listener")
+            }
+          },
+          sendStatus: (msg, code) => {
+            if (hooked) {
+              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+            }
+  
+            if (typeof code === 'number') {
+              document.getElementById(this.rootElement).innerHTML =   JSON.stringify({msg, code});
+              hooked = true;
+            } else {
+              throw new Error("Invalid status code");
+            }
+  
+  
+  
+          },
+          markdown: (data, type = null) => {
+            if (hooked) {
+              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+            }
+            import('https://cdn.jsdelivr.net/npm/marked/marked.min.js').then(module => {
+              if(type == "path"){
+                fetch(data)
+                .then(response => response.text())
+                .then(text => {
+                    document.getElementById(this.rootElement).innerHTML = marked.parse(text);
+                });
+            }else{
+                document.getElementById(this.rootElement).innerHTML = marked.parse(data);
+            }
+            });
+            
+          },
+          redirect: (url) => {
+  
+            if (hooked) {
+              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+            }
+            window.location.hash = url;
+            hooked = true;
+  
+          },
+          compress : async (data) => {
+            
+           const promise = new Promise((resolve, reject) => {
+            import("https://unpkg.com/pako@2.1.0/dist/pako.min.js").then(module => {
+              console.log("pako loaded");
+              const inputUint8Array = new TextEncoder().encode(data);
+              const compressedUint8Array = pako.gzip(inputUint8Array);
+              resolve(compressedUint8Array);
+             
+            });
+           
+             
+           });
+            return promise;
+          },
+          
+          // Decompress data using pako
+           decompress : async (data) => {
+            return new Promise((resolve, reject) => {
+              import("https://unpkg.com/pako@2.1.0/dist/pako.min.js").then(module => {
+                const compressedUint8Array = new Uint8Array(data);
+                const decompressedUint8Array = pako.inflate(compressedUint8Array);
+                const result = new TextDecoder().decode(decompressedUint8Array);
+                resolve(result);
+              });
+          
+            });
+          },
+           
+          sendFile: (file) => {
+            let element = this.rootElement
+            if (hooked) {
+              throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+            }
+  
+            let xhr = new XMLHttpRequest();
+                  xhr.open('GET', file);
+                  xhr.responseType = 'blob';
+                  xhr.onload = function () {
+                    if (file.endsWith(".png" || ".jpg" || ".jpeg" || ".gif" || ".svg" || ".ico")) {
+                      document.getElementById(element).innerHTML = `<img src="${file}" />`;
+                    } else if (file.endsWith(".json") ) {
+                      fetch(file)
+                        .then(response => response.json())
+                        .then(data => {
+                          const jsonData = JSON.stringify(data);
+                          const html = `<textarea style="width:100%;height:100%; resize:none; border:none;">${jsonData}</textarea>`
+                          document.getElementById(element).innerHTML = html;
+                        })
+                    }else if (file.endsWith(".js") ) {
+                      fetch(file)
+                        .then(response => response.text())
+                        .then(data => {
+                          const html = `<textarea style="width:100%;height:100%; resize:none; border:none;">${data}</textarea>`
+                          document.getElementById(element).innerHTML = html;
+                        })
+                    }else if (file.endsWith(".css") ) {
+                      fetch(file)
+                        .then(response => response.text())
+                        .then(data => {
+                          const html = `<textarea style="width:100%;height:100%; resize:none; border:none;">${data}</textarea>`
+                          document.getElementById(element).innerHTML = html;
+                        })
+                    }else if (file.endsWith(".html") ) {
+                      fetch(file)
+                        .then(response => response.text())
+                        .then(data => {
+                          const html = `<textarea style="width:100%;height:100%; resize:none; border:none;">${data}</textarea>`
+                          document.getElementById(element).innerHTML = html;
+                        })
+                      }else if (file.endsWith(".img") || file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".gif") || file.endsWith(".svg") || file.endsWith(".ico")) {
+                        document.getElementById(element).innerHTML =    `
+                        <img src="${file}" 
+                        
+                        style="width:100%;height:100%; resize:none; border:none; position:absolute; top:0; left:0;"
+                         
+                        />
+                        `
+                      }else if(file.endsWith(".pdf")){
+                        document.getElementById(element).innerHTML =    `
+                        <embed src="${file}" 
+                        
+                        style="width:100%;height:100%; resize:none; border:none; position:absolute; top:0; left:0;"
+                         
+                        />
+                        `
+                      }else if (file.endsWith('.mp4') || file.endsWith('.webm') || file.endsWith('.ogg')) {
+                        let video = document.createElement('video');
+                        video.src = file;
+                        video.controls = true;
+                        document.getElementById(element).appendChild(video);
+                      }else{
+                        let audio = document.createElement('audio');
+                        audio.src = file;
+                        audio.controls = true;
+                        document.getElementById(element).appendChild(audio);
+                      }
+                    let a = document.createElement('a');
+                    a.href = window.URL.createObjectURL(xhr.response);
+                    a.download = file;
+                    a.click();
+                  };
+                  xhr.send();
+          }
+  
+        }
+        if (!this.hashChangeListener) {
+          this.hashChangeListener = () => {
+            if (window.location.hash.substring(1).match(regex)) {
+              const matches = window.location.hash.substring(1).match(regex);
+              const params = {};
+              for (let i = 0; i < paramNames.length; i++) {
+                params[paramNames[i]] = matches[i + 1];
+              }
+  
+              const req = {
+                params: params,
+                rootUrl: this.currentUrl,
+                url: window.location.hash.substring(1),
+              };
+  
+              const res = {
+                json: (data) => {
+                  if (hooked) {
+                    throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+                  }
+                  try {
+                    const jsonData = JSON.stringify(data);
+                    const html = `<pre>${jsonData}</pre>`;
+                    document.getElementById(this.rootElement).innerHTML = html;
+                    hooked = true;
+                  } catch (e) {
+                    throw new Error("Invalid JSON data");
+                  }
+                },
+                title: (title) => {
+                  if (hooked) {
+                    throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+                  }
+                  document.title = title;
+                  hooked = true;
+                },
+                saveState: () => {
+                  if (hooked) {
+                    throw new Error("State has already been saved cannot save again");
+                  }
+                  const route = window.location.hash.substring(1);
+                  // save the current route in history
+                  if (window.sessionStorage.getItem(route)) {
+                    window.location.hash = window.sessionStorage.getItem(route);
+                  } else {
+                    window.sessionStorage.setItem(route, route);
+                  }
+                  hooked = true;
+  
+                },
+                compress : async (data) => {
+            
+                  const promise = new Promise((resolve, reject) => {
+                   import("https://unpkg.com/pako@2.1.0/dist/pako.min.js").then(module => {
+                     console.log("pako loaded");
+                     const inputUint8Array = new TextEncoder().encode(data);
+                     const compressedUint8Array = pako.gzip(inputUint8Array);
+                     resolve(compressedUint8Array);
+                    
+                   });
+                  
+                    
+                  });
+                   return promise;
+                 },
+                 
+                 // Decompress data using pako
+                  decompress : async (data) => {
+                   return new Promise((resolve, reject) => {
+                     import("https://unpkg.com/pako@2.1.0/dist/pako.min.js").then(module => {
+                       const compressedUint8Array = new Uint8Array(data);
+                       const decompressedUint8Array = pako.inflate(compressedUint8Array);
+                       const result = new TextDecoder().decode(decompressedUint8Array);
+                       resolve(result);
+                     });
+                 
+                   });
+                 },
+                 markdown: (data, type = null) => {
+                  if (hooked) {
+                    throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+                  }
+                  import('https://cdn.jsdelivr.net/npm/marked/marked.min.js').then(module => {
+                    if(type == "path"){
+                      fetch(data)
+                      .then(response => response.text())
+                      .then(text => {
+                          document.getElementById(this.rootElement).innerHTML = marked.parse(text);
+                      });
+                  }else{
+                      document.getElementById(this.rootElement).innerHTML = marked.parse(data);
+                  }
+                  });
+                  
+                },
+                restoreState: () => {
+                  if (hooked) {
+                    throw new Error("State has already been restored cannot restore again");
+                  }
+                  // restore the current route in history
+                  let route = window.location.hash.substring(1);
+                  if (window.sessionStorage.getItem(route)) {
+                    window.location.hash = window.sessionStorage.getItem(route);
+                  } else {
+                    window.location.hash = this.currentUrl;
+                  }
+                  hooked = true;
+                },
+                send: (data) => {
+                  if (hooked) {
+                    throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+                  }
+                  document.getElementById(this.rootElement).innerHTML = data;
+                  hooked = true;
+                },
+                jsx: (data) => {
+                  if (hooked) {
+                    throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+                  }
+                   
+                  window.React._render(data)(this.rootElement);
+                 
+                  hooked = true;
+                },
+                return: () => {
+                  if (hooked) {
+                    hooked = false;
+                  }
+                  if (this.hashChangeListener) {
+                    window.removeEventListener("hashchange", this.hashChangeListener);
+                    this.hashChangeListener = null;
+                    console.log("removed last event listener")
+                  }
+                },
+                sendStatus: (msg, code) => {
+                  if (hooked) {
+                    throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+                  }
+        
+                  if (typeof code === 'number') {
+                    document.getElementById(this.rootElement).innerHTML =   JSON.stringify({msg, code});
+                    hooked = true;
+                  } else {
+                    throw new Error("Invalid status code");
+                  }
+        
+        
+        
+                },
+                redirect: (url) => {
+  
+                  if (hooked) {
+                    throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+                  }
+                  window.location.hash = url;
+                  hooked = true;
+  
+                },
+                sendFile: (file) => {
+                  let element = this.rootElement
+                  if (hooked) {
+                    throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+                  }
+                  let xhr = new XMLHttpRequest();
+                  xhr.open('GET', file);
+                  xhr.responseType = 'blob';
+                  xhr.onload = function () {
+                    if (file.endsWith(".png" || ".jpg" || ".jpeg" || ".gif" || ".svg" || ".ico")) {
+                      document.getElementById(element).innerHTML = `<img src="${file}" />`;
+                    } else if (file.endsWith(".json") ) {
+                      fetch(file)
+                        .then(response => response.json())
+                        .then(data => {
+                          const jsonData = JSON.stringify(data);
+                          const html = `<textarea style="width:100%;height:100%; resize:none; border:none;">${jsonData}</textarea>`
+                          document.getElementById(element).innerHTML = html;
+                        })
+                    }else if (file.endsWith(".js") ) {
+                      fetch(file)
+                        .then(response => response.text())
+                        .then(data => {
+                          const html = `<textarea style="width:100%;height:100%; resize:none; border:none;">${data}</textarea>`
+                          document.getElementById(element).innerHTML = html;
+                        })
+                    }else if (file.endsWith(".css") ) {
+                      fetch(file)
+                        .then(response => response.text())
+                        .then(data => {
+                          const html = `<textarea style="width:100%;height:100%; resize:none; border:none;">${data}</textarea>`
+                          document.getElementById(element).innerHTML = html;
+                        })
+                    }else if (file.endsWith(".html") ) {
+                      fetch(file)
+                        .then(response => response.text())
+                        .then(data => {
+                          const html = `<textarea style="width:100%;height:100%; resize:none; border:none;">${data}</textarea>`
+                          document.getElementById(element).innerHTML = html;
+                        })
+                      }else if (file.endsWith(".img") || file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".gif") || file.endsWith(".svg") || file.endsWith(".ico")) {
+                        document.getElementById(element).innerHTML =    `
+                        <img src="${file}" 
+                        
+                        style="width:100%;height:100%; resize:none; border:none; position:absolute; top:0; left:0;"
+                         
+                        />
+                        `
+                      }else if(file.endsWith(".pdf")){
+                        document.getElementById(element).innerHTML =    `
+                        <embed src="${file}" 
+                        
+                        style="width:100%;height:100%; resize:none; border:none; position:absolute; top:0; left:0;"
+                         
+                        />
+                        `
+                      }else if (file.endsWith('.mp4') || file.endsWith('.webm') || file.endsWith('.ogg')) {
+                        let video = document.createElement('video');
+                        video.src = file;
+                        video.controls = true;
+                        document.getElementById(element).appendChild(video);
+                      }else{
+                        let audio = document.createElement('audio');
+                        audio.src = file;
+                        audio.controls = true;
+                        document.getElementById(element).appendChild(audio);
+                      }
+                    let a = document.createElement('a');
+                    a.href = window.URL.createObjectURL(xhr.response);
+                    a.download = file;
+                    a.click();
+                  };
+                  xhr.send();
+                  hooked = true;
+                 
+                }
+  
+              }
+  
+              callback(req, res);
+            }
+          };
+  
+          window.addEventListener("hashchange", this.hashChangeListener);
+        }
+  
+        callback(req, res);
+  
+        return true;
+      }
+  
+      return false;
+    }
+    
+    post(path, callback) {
+      if (!this.routes[path]) {
+        throw new Error(`No listener registered for route ${path}`);
+      }
+  
+      let hooked = false;
+      this.sendContent = null
+      const res = {
+        set: (name, value) => {
+           let accepted = [
+            "Accept",
+            "Accept-Charset",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Access-Control-Request-Method",
+            "Access-Control-Request-Headers",
+            "Authorization",
+            "Cache-Control",
+            "Connection",
+            "Cookie",
+            "Content-Length",
+            "Content-MD5",
+            "Content-Type",
+            "Date",
+           ]
+            if(!accepted.includes(name)){
+              throw new Error({
+                message: "Invalid header name",
+                name: name,
+                accepted_headers: accepted
+              })
+            }
+            if (typeof value !== 'string') {
+              throw new Error("Invalid header value");
+            }
+            this.headers[name] = value;
+          
+
+        },
+        json: (data) => {
+          if(this.headers["Content-Type"] == "application/json"){
+          if (hooked) {
+            throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+          }
+          try {
+            const jsonData = JSON.stringify(data);
+            this.sendContent = jsonData
+            hooked = true;
+          } catch (e) {
+            throw new Error("Invalid JSON data");
+          }
+        }else{
+          throw new Error("Content-Type header must be set to application/json")
+        }
+        },
+        text: (data) => {
+          if(this.headers["Content-Type"] == "text/plain"){
+          if (hooked) {
+            throw new Error("Cannot send headers after they where already sent please refrain from using double res functions and call res.return() to resend to client");
+          }
+          try {
+            const textData = data;
+           this.sendContent = textData
+            hooked = true;
+          } catch (e) {
+            throw new Error("Invalid text data");
+          }
+        }
+      },
+      return: () => {
+        if (hooked) {
+          hooked = false;
+        }
+        if (this.hashChangeListener) {
+          window.removeEventListener("hashchange", this.hashChangeListener);
+          this.hashChangeListener = null;
+          console.log("removed last event listener")
+        }
+      },
+
+     }
+      
+    
+      callback(res)
+       
+      const  message = {
+        path: path,
+        data: this.sendContent,
+        headers: this.headers
+      }
+      window.postMessage(message, "*");
+    }
+    
+     
+     
+  
+    listen(path, callback) {
+      if (this.listeners[path]) {
+        throw new Error(`Listener already registered for route ${path}`);
+      }
+  
+      const listener = (event) => {
+        const messagePath = event.data.path;
+        const data = event.data.data;
+        const headers = event.data.headers;
+  
+        if (messagePath === path) {
+           callback({
+            "data": data,
+            "headers": headers,
+            "method": "POST"
+           })
+        }
+      };
+  
+      window.addEventListener("message", listener);
+      this.listeners[path] = listener;
+    }
+  
+    stopListening(path) {
+      const listener = this.listeners[path];
+  
+      if (listener) {
+        window.removeEventListener("message", listener);
+        delete this.listeners[path];
+      }
+    }
+    use(path) {
+      
+      const paramNames = [];
+      const queryNames = [];
+      const parsedPath = path.split('/').map(part => {
+        if (part.startsWith(':')) {
+          paramNames.push(part.substring(1));
+          return '([^/]+)';
+        }
+        if (part.startsWith('*')) {
+          paramNames.push(part.substring(1));
+          return '(.*)';
+        }
+        if (part.startsWith('?')) {
+          queryNames.push(part.substring(1));
+          return '([^/]+)';
+        }
+        return part;
+      }
+      ).join('/');
+      const regex = new RegExp('^' + parsedPath + '(\\?(.*))?$');
+       path = parsedPath;
+      this.routes[path] = true;
+      this.storedroutes.push(path);
+    }
+   
+  
+  
+    bindRoot(element) {
+      this.rootElement = element
+    }
+  
+    onload(callback) {
+      window.onload = () => {
+       
+        window.addEventListener("DOMContentLoaded", callback())
+      }
+    }
+   
   
     on(path, callback) {
       window.addEventListener('hashchange', () => {
@@ -2576,6 +2971,8 @@ export class ReactRouter {
         this.currentUrl = path;
   
         if (window.location.hash.substring(1).match(regex)) {
+          this.storedroutes.push( window.location.hash.substring(1))
+          this.routes[path] = true
           const matches = window.location.hash.substring(1).match(regex);
           const params = {};
   
@@ -2893,15 +3290,196 @@ export class ReactRouter {
     // Remove the current hash change event listener
   
   
-    error(callback) {
-      window.onhashchange = (e) => {
-        const path = e.newURL.split("#")[1];
-        if (!this.routes[path]) {
-          callback();
+ 
+  }
+export  class   ReactRouter_v2 {
+  constructor() {
+    this.routes = [];
+    this.currentRoute = null;
+    this.eventListeners = {};
+    this.init();
+    this.rootElement = ''
+  }
+
+  init(element) {
+    this.rootElement = document.querySelector(element)
+    window.addEventListener('popstate', () => {
+      this.handleRouteChange();
+     
+    });
+  }
+
+  use(path, callback) {
+    let el = this.rootElement
+    let hooked  = false;
+
+    const res = {
+      send: (data) => {
+        if (hooked) {
+          throw new Error('Cannot send headers after they have already been sent use res.end() to send next response')
         }
+        el.innerHTML = data;
+        hooked = true;
+      },
+      end: () => {
+        if (hooked) {
+          hooked = false;
+        }
+        window.history.replaceState(null, null, window.location.pathname);
+      },
+      redirect: (path) => {
+        if (hooked) {
+          throw new Error('Cannot send headers after they have already been sent use res.end() to send next response')
+        }
+        window.history.pushState(null, null, path);
+        this.handleRouteChange();
+        hooked = true;
+      },
+      json: (data) => {
+        if (hooked) {
+          throw new Error('Cannot send headers after they have already been sent use res.end() to send next response')
+        }
+        const jsonData = JSON.stringify(data);
+        el.innerHTML = `<pre>${jsonData}</pre>`;
+        hooked = true;
+      },
+      sendStatus: (msg, code) => {
+        if (hooked) {
+          throw new Error('Cannot send headers after they have already been sent use res.end() to send next response')
+        }
+        if (typeof code === 'number') {
+          el.innerHTML = JSON.stringify({ msg, code });
+          hooked = true;
+        } else {
+          throw new Error('Invalid status code');
+        }
+      },
+      render: (data) => {
+        if (hooked) {
+          throw new Error('Cannot send headers after they have already been sent use res.end() to send next response')
+        }
+        window.React._render(data)(el);
+        hooked = true;
       }
+
+
+    }
+    const route = {
+      path,
+      callback,
+      paramNames: []
+    };
+
+   
+
+    // Extract parameter names from the path
+    const pathSegments = path.split('/');
+    pathSegments.forEach(segment => {
+      if (segment.startsWith(':')) {
+        const paramName = segment.slice(1);
+        route.paramNames.push(paramName);
+      }
+    });
+
+    const req = {
+      params: route.paramNames.reduce((acc, curr) => {
+        acc[curr] = null;
+        return acc;
+      }, {}),
+      query: {},
+      url: window.location.pathname,
+      method: 'GET'
+    };
+    callback(req, res);
+    this.routes.push(route);
+  }
+
+  navigateTo(path) {
+    window.history.pushState(null, null, path);
+    this.handleRouteChange();
+  }
+
+  handleRouteChange() {
+    const currentPath = window.location.pathname;
+    const matchingRoute = this.matchRoute(currentPath);
+
+    if (matchingRoute) {
+      const { path, callback, paramNames } = matchingRoute;
+      const params = this.extractParams(path, currentPath, paramNames);
+      this.currentRoute = path;
+      callback(params);
+      this.triggerEvent('routeChange', path, params);
+    } else {
+      console.log('404: Route not found');
     }
   }
+
+  on(event, handler) {
+    if (!this.eventListeners[event]) {
+      this.eventListeners[event] = new Set();
+    }
+    this.eventListeners[event].add(handler);
+  }
+
+  off(event, handler) {
+    if (this.eventListeners[event]) {
+      this.eventListeners[event].delete(handler);
+    }
+  }
+
+  triggerEvent(event, route, params) {
+    if (this.eventListeners[event]) {
+      this.eventListeners[event].forEach(handler => {
+        handler(route, params);
+      });
+    }
+  }
+
+  matchRoute(currentPath) {
+    for (const route of this.routes) {
+      const { path } = route;
+      const regex = this.buildRegex(path);
+      if (regex.test(currentPath)) {
+        return route;
+      }
+    }
+    return null;
+  }
+
+  buildRegex(path) {
+    const paramNames = [];
+    const pattern = path.replace(/:[a-zA-Z0-9]+/g, match => {
+      const paramName = match.slice(1);
+      paramNames.push(paramName);
+      return '([^/]+)';
+    });
+    const regexString = `^${pattern}$`;
+    return new RegExp(regexString);
+  }
+
+  extractParams(routePath, currentPath, paramNames) {
+    const routeSegments = routePath.split('/');
+    const currentSegments = currentPath.split('/');
+    const params = {};
+
+    for (let i = 0; i < routeSegments.length; i++) {
+      const routeSegment = routeSegments[i];
+      const currentSegment = currentSegments[i];
+
+      if (routeSegment.startsWith(':')) {
+        const paramName = routeSegment.slice(1);
+        params[paramName] = currentSegment;
+      }
+    }
+
+    return params;
+  }
+}
+
+
+  
+
+window.ReactRouter_v2 = ReactRouter_v2;
   
   
   window.ReactRouter = ReactRouter;
@@ -2913,14 +3491,6 @@ export class ReactRouter {
 var totalSize = 0;
 let cache = {}; // cache for require() callsa
  
- 
-
- 
- 
- 
-
-
-
 window.getBundleSize = () => {
   const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
   for(var i in cache){
@@ -2938,53 +3508,62 @@ window.getBundleSize = () => {
  
 
 window.onload = () => {
-    
-    
-   
-    window.addEventListener('DOMContentLoaded', () => {
-      if (document.querySelector("html").getAttribute("data-env") === "production") {
-        // Preload script files
-        document.querySelectorAll('script[src]').forEach(script => {
-          const link = document.createElement("link");
-          link.rel = "preload";
-          link.href = script.src;
-          link.as = "script";
-          document.head.appendChild(link);
-        });
+     
+   setTimeout(() => {
+    if (document.querySelector("html").getAttribute("data-env") === "production") {
       
-        // Lazy load images
-        document.querySelectorAll('img[src]').forEach(img => {
-          const observer = new IntersectionObserver(entries => {
-            if (entries[0].isIntersecting) {
-              const src = img.dataset.src;
-              if (src) {
-                img.src = src;
-                img.removeAttribute('src');
-                observer.disconnect();
-                console.log("Lazy loaded image: " + src);
-              }
+      document.querySelectorAll('script[src]').forEach(script => {
+        const link = document.createElement("link");
+        link.rel = "preload";
+        link.href = script.src;
+        link.as = "script";
+        document.head.appendChild(link);
+      });
+    
+     
+      // Lazy load images
+      document.querySelectorAll('img[src]').forEach(img => {
+        
+        const observer = new IntersectionObserver(entries => {
+          if (entries[0].isIntersecting) {
+            const src = img.dataset.src;
+            const link = document.createElement("link");
+            link.rel = "preload";
+            link.as = "image";
+            link.href =  img.src
+            document.head.appendChild(link);
+            if (src) {
+              img.src = src;
+              img.removeAttribute('src');
+              observer.disconnect();
+               
+
             }
-          });
-          observer.observe(img);
+          }
         });
-      
-        // Preload stylesheets
-        document.querySelectorAll('link[rel="stylesheet"]').forEach(styleSheet => {
-          const link = document.createElement("link");
-          link.rel = "preload";
-          link.href = styleSheet.href;
-          link.as = "style";
-          link.crossOrigin = "anonymous";
-          document.head.appendChild(link);
-        });
-      } else {
-        console.warn("Not in production mode, skipping asset optimization.");
-        console.log(getBundleSize())
-      }
-      
+        observer.observe(img);
+      });
+    
+       
+      // Preload stylesheets
+      document.querySelectorAll('link[rel="stylesheet"]').forEach(styleSheet => {
+        const link = document.createElement("link");
+        link.rel = "preload";
+        link.href = styleSheet.href;
+        link.as = "style";
+        link.crossOrigin = "anonymous";
+        document.head.appendChild(link);
+      });
+   
+    } else {
+      console.warn("Not in production mode, skipping asset optimization.");
+      console.log(getBundleSize())
+    }
+    
+    }, 20); // wait 4 second before running
       
         
-    })
+    
     
   
 }
@@ -3027,15 +3606,96 @@ window.JsonWebToken = {
     localStorage.removeItem('jwtToken');
   }
 };
+  
+window.router_path = null;
 
-let jwtexpery = localStorage.getItem('jwtToken');
-let date = 
- 
+const useRouter = (entryFolder) => {
+  const fetchAndRenderContent = (url) => {
+    fetch(url)
+      .then((res) => res.text())
+      .then((content) => {
+        // Render the content or perform other actions
+        console.log(content);
+      })
+      .catch((error) => {
+        console.error(`Failed to fetch content: ${error}`);
+      });
+  };
 
- 
+  const traverseFolder = (folderPath) => {
+    const folderUrl = `${entryFolder}${folderPath}`;
 
- 
- 
+    fetch(folderUrl)
+      .then((res) => res.text())
+      .then((data) => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(data, 'text/html');
+        const links = doc.querySelectorAll('a');
+
+        links.forEach((link) => {
+          const subPath = link.getAttribute('href');
+          const subFolderPath = `${folderPath}${subPath}`;
+
+          if (subPath.endsWith('.md')) {
+            const mdUrl = `${entryFolder}${subFolderPath}`;
+            const hashRoute = `#/${subFolderPath}`;
+
+            if (hashRoute === window.location.hash) {
+              fetchAndRenderContent(mdUrl);
+            }
+          } else {
+            traverseFolder(subFolderPath);
+          }
+        });
+      });
+  };
+
+  traverseFolder('');
+};
+
+
+
+export const bcrypt = {
+  hash: (password, saltRounds = 10) => {
+    return new Promise((resolve, reject) => {
+      if (typeof password !== 'string') { 
+        reject(new Error('Password must be a string'));
+      }
+      if (typeof saltRounds !== 'number') {
+        reject(new Error('Salt rounds must be a number'));
+      }
+      if (saltRounds < 10) {
+        reject(new Error('Salt rounds must be >= 10'));
+      }
+      const salt = window.crypto.getRandomValues(new Uint8Array(16));
+      window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(password)).then((hash) => {
+        resolve({
+          hash: window.btoa(String.fromCharCode(...new Uint8Array(hash))),
+          salt: window.btoa(String.fromCharCode(...salt)),
+        });
+      });
+    });
+  },
+  compare: (password, hash, salt) => {
+    return new Promise((resolve, reject) => {
+      if (typeof password !== 'string') {
+        reject(new Error('Password must be a string'));
+      }
+      if (typeof hash !== 'string') {
+        reject(new Error('Hash must be a string'));
+      }
+      if (typeof salt !== 'string') {
+        reject(new Error('Salt must be a string'));
+      }
+      window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(password)).then((newHash) => {
+        const newHashString = window.btoa(String.fromCharCode(...new Uint8Array(newHash)));
+        resolve(newHashString === hash);
+      });
+    });
+  },
+};
+window.bcrypt = bcrypt;
+
 window.useState = React.useState
 window.useEffect = React.useEffect
 window.useContext = React.useContext
@@ -3075,10 +3735,10 @@ window.React._render = (component) => {
     }
 }
  
-window.visiVersion = "1.7.0-stable"
+window.visiVersion = "1.7.6-stable"
  fetch('https://registry.npmjs.org/visi.js').then(res => res.json()).then(json => {
     if(json['dist-tags'].latest !== visiVersion){
-       console.assert(false, `You are using an outdated version of Visi.js. Please update to ${json['dist-tags'].latest} by running npm i visi.js@latest`, {
+       console.assert(false, `You are using an outdated version of Visi.js. Please update to ${json['dist-tags'].latest} by running npx visiapp@latest create <your_app_name>`, {
         current: visiVersion,
         latest: json['dist-tags'].latest,
        })
@@ -3105,8 +3765,8 @@ let renderingtype = mainhtmlel.getAttribute("data-render");
 window.CACHE_EXPIRATION_TIME = 3600000; // 1 hour
 let CACHE_VERSION = localStorage.getItem('dispose_cache_version')  
 window.CACHE_VERSION = CACHE_VERSION;
-let updated = false;
-const updateCacheVersion = (newVersion) => {
+
+export const updateCacheVersion = (newVersion) => {
   if (window.localStorage) {
     const currentVersion = parseInt(localStorage.getItem('dispose_cache_version'));
     if (!isNaN(currentVersion) && newVersion > currentVersion) {
@@ -3130,9 +3790,27 @@ const updateCacheVersion = (newVersion) => {
 };
 
 window.updateCacheVersion = updateCacheVersion;
+const workerFunction = () => {
+  onmessage = (event) => {
+    importScripts('https://unpkg.com/@babel/standalone/babel.min.js');
+    const code = event.data;
+    const compiledCode = Babel.transform(code, { presets: ['react', 'typescript'] }).code;
+    postMessage({ type: 'code', data: compiledCode });
+  };
+};
 
 
-const dispose = (path, callback, props = {}) => {
+const worker = new Worker(
+  URL.createObjectURL(
+    new Blob([`(${workerFunction.toString()})()`], {
+      type: 'application/javascript',
+    })
+  )
+);
+ 
+
+
+export const dispose = (path, callback, props = {}) => {
   if (renderingtype === 'cfr' && window.localStorage) {
     const cachedCode = localStorage.getItem(path);
     if (cachedCode) {
@@ -3157,13 +3835,8 @@ const dispose = (path, callback, props = {}) => {
       }
     }
   }
-  const worker = new Worker(
-    URL.createObjectURL(
-      new Blob([`(${workerFunction.toString()})()`], {
-        type: 'application/javascript',
-      })
-    )
-  );
+
+  
 
   const extension = path.split('.').pop();
   const presets = ['react'];
@@ -3208,16 +3881,7 @@ const dispose = (path, callback, props = {}) => {
 
 }
    
-  const workerFunction = () => {
-    onmessage = (event) => {
-      importScripts('https://unpkg.com/@babel/standalone/babel.min.js');
-      const code = event.data;
-      const compiledCode = Babel.transform(code, { presets: ['react', 'typescript'] }).code;
-      postMessage({ type: 'code', data: compiledCode });
-    };
-  };
-  
-  
+ 
   window.dispose = dispose;
   
  
