@@ -1,3 +1,5 @@
+import { ReactRouter } from "./assets/visi.js/visi.min.js"
+
 const app = new ReactRouter()
 window.app = app
 lib("@tailwind/daisyui@3.0.20")
