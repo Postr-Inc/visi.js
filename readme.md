@@ -10,28 +10,38 @@ Features:
  
 * Asynchronous component compiling system. 
 * Parrallel data handling using lazy-javascript and querysharding, 
-* Express.js like routing system!
-* FS using localstorage & Os
-* cfr (client side fly rendering) - compiles once and renders on the fly!
+* Express.js like hash router & history router
+* FS using localstorage & Os & sqlstore 
+* cfr (component first rendering) -  a new way to render components
+* full typescript support!
+
+#  1.8.3-stable
+* visijs now handles react versions & caches them using cfr 
+ - it relies on data-env to know which type to use whether production or development so set it to production when deploying!
+ - this has been implemented to help fix the chain request issue that lighthouse has and also helps with performance
+ - dont worry about visitors having invalid react versions it auto updates based on the latest version of react!
+ - lib also allows you to remove cfr modules by doing libManager.clearModule('somename') u can list libManager.listModules() to see all modules and clearall   - libManager.clearAll()
+```html
+ <!DOCTYPE html>
+<html lang="en"  data-render="cfr" data-env="production" debug   data-react-version="18.2.0"> 
+<!-- no longer need to supply react-dom & react visi handles it for you! -->
+<script src="./unminified.js" type="text/babel" data-type="module"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script> 
+</head>
+<body>
+    <!--Example body structure of index.html-->
+ <div id="app"></div>
+ <script src="./test.js" type="text/babel" data-type="module"></script>
+  
+</body>
+ 
+</html>
+```
+# soon
+* better tsx support! v1.8+
  
 
-# New
-* cfr is avalible heres how to get started it allows you to compile once and render on the fly! just set `data-render="cfr"` on your html tag and visi will do the rest! - cfr clears cache every 2 minutes!
-```js
-```html
-<html lang="en" data-env="production" data-render="cfr">
-```
-you can manage the cfr cache time and version in your index.js file
-```js
-window.CACHE_EXPIRATION_TIME = 120;
-window.updateCacheVersion(2) // new version
-```
-
-# soon
-* sse rendering maybe 
-* file based routing any jsx tsx or html page in the pages folder will be rendered as a route
-
-[Website](https://postr-inc.github.io/visi.js/#/) | [Docs](https://postr-inc.gitbook.io/visi.js-docs/)
+[Website](https://visijs.postr-inc.me/) | [Docs](https://postr-inc.gitbook.io/visi.js-docs/)
 | [Discord](https://discord.gg/RGYQKENTRk)
   
  
