@@ -12,57 +12,36 @@ Features:
 * Parrallel data handling using lazy-javascript and querysharding, 
 * Express.js like hash router & history router
 * FS using localstorage & Os & sqlstore 
-* cfr (client side fly rendering) - compiles once and renders on the fly!
+* cfr (component first rendering) -  a new way to render components
+* full typescript support!
 
-# new 1.7.6-stable
-* added  notifier class for web notifications & push notifications aswell as a ReactRouter_v2 which uses history routing
+#  1.8.3-stable
+* visijs now handles react versions & caches them using cfr 
+ - it relies on data-env to know which type to use whether production or development so set it to production when deploying!
+ - this has been implemented to help fix the chain request issue that lighthouse has and also helps with performance
+ - dont worry about visitors having invalid react versions it auto updates based on the latest version of react!
+ - lib also allows you to remove cfr modules by doing libManager.clearModule('somename') u can list libManager.listModules() to see all modules and clearall   - libManager.clearAll()
+```html
+ <!DOCTYPE html>
+<html lang="en"  data-render="cfr" data-env="production" debug   data-react-version="18.2.0"> 
+<!-- no longer need to supply react-dom & react visi handles it for you! -->
+<script src="./unminified.js" type="text/babel" data-type="module"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script> 
+</head>
+<body>
+    <!--Example body structure of index.html-->
+ <div id="app"></div>
+ <script src="./test.js" type="text/babel" data-type="module"></script>
+  
+</body>
  
-```js
- let eventType = "newMessage";
-notifier.subscribe(eventType, (notification) => {
-  console.log("New notification:", notification);
-});
-notifier.handleNotificationClick = (event) => {
-  console.log("Notification clicked:", event.notification);
-};
-notifier.handleNotificationClose = (event) => {
-  console.log("Notification closed:", event.notification);
-};
-
-// Triggering a notification
-notifier.send("New message received!", { body: "Click to view.", icon: "notification.png" });
-
-// react router v2
-const app = new  ReactRouter_v2();
-app.init('#app');
-app.use('/', (req, res) => {
-      res.send('Hello World!');
-      // Handle the home route
-      console.log('Home route matched!');
- });
-    
-     
-app.use('/about', (req, res) => {
-      res.send('About page');
-      // Handle the about route
-      console.log('About route matched!');
-});
-    
-
-app.navigateTo('/');
-app.navigateTo('/about');
-
-app.on('routeChange', (route, params) => {
-      console.log('Route changed:', route);
-      console.log('Params:', params);
-});
- 
+</html>
 ```
 # soon
-* sse rendering -> one & off compiling user sends sse connection server renders and sends back to client
+* better tsx support! v1.8+
  
 
-[Website](https://postr-inc.github.io/visi.js/#/) | [Docs](https://postr-inc.gitbook.io/visi.js-docs/)
+[Website](https://visijs.postr-inc.me/) | [Docs](https://postr-inc.gitbook.io/visi.js-docs/)
 | [Discord](https://discord.gg/RGYQKENTRk)
   
  
