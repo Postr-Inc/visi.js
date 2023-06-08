@@ -3,7 +3,7 @@
 
 const app = new ReactRouter()
 window.app = app
-lib("@tailwind/daisyui")
+lib("@tailwind/daisyui@3.0.20")
 app.bindRoot("app")
 app.use('/')
 app.use('/team')
