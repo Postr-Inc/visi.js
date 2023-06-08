@@ -1323,7 +1323,8 @@ export let contained = {
 
 window.contained = contained;
 
-const lib = async (path) => {
+async function lib (path = null) {
+  let promise = new Promise((resolve, reject) => {
   if(!path) throw new Error("[Library Manager]: No path provided");
   let cache = JSON.parse(localStorage.getItem('lib_modules') || '{}');
 
@@ -1338,18 +1339,18 @@ const lib = async (path) => {
 
       // Check if daisyui is in cache
       if (!cache.daisyui || cache.daisyuiVersion !== version) {
-        console.log("Loading daisyui from CDN");
-        let script = document.createElement('script');
-
-        script.src = `https://cdn.tailwindcss.com?plugins=${path}`;
-        script.id = 'tailwindcss';
-        document.head.appendChild(script);
-        fetch('https://cors-anywhere.herokuapp.com/https://cdn.tailwindcss.com')
+          
+ 
+        fetch('https://cdn.jsdelivr.net/npm/visi.js@1.8.6-stable/modules/tailwind.min.js')
           .then(response => response.text())
           .then(data => {
             cache.tailwindcss = data;
             localStorage.setItem('lib_modules', JSON.stringify(cache));
-
+            let script = document.createElement('script');
+            script.innerHTML = data;
+            document.head.appendChild(script);
+            
+            
           })
           .catch(error => {
             console.log(error);
@@ -1367,6 +1368,7 @@ const lib = async (path) => {
             
           }
         );
+         
       } else {
         let start = performance.now();
         let style = document.createElement('style');
@@ -1432,18 +1434,19 @@ const lib = async (path) => {
     if (isCFREnabled) {
       // Check if tailwindcore is in cache
       if (!cache.tailwindcore) {
-        fetch('https://cors-anywhere.herokuapp.com/https://cdn.tailwindcss.com')
+        fetch('https://cdn.jsdelivr.net/npm/visi.js@1.8.6-stable/modules/tailwind.min.js')
           .then(response => response.text())
           .then(data => {
             cache.tailwindcss = data;
             localStorage.setItem('lib_modules', JSON.stringify(cache));
-
+           
           }
           )
           .catch(error => {
             console.log(error);
           }
           );
+          
         console.log("Loading tailwindcss from CDN");
         let script = document.createElement('script');
        
@@ -1478,12 +1481,12 @@ const lib = async (path) => {
     plugins = plugins.split(",");
     if (isCFREnabled) {
       if (!cache.tailwindcss) {
-        fetch(`https://cors-anywhere.herokuapp.com/https://cdn.tailwindcss.com?plugins=${plugins}`)
+        fetch(`https://cdn.jsdelivr.net/npm/visi.js@1.8.6-stable/modules/tailwind.min.js`)
           .then(response => response.text())
           .then(data => {
             cache.tailwindcss = data;
             localStorage.setItem('lib_modules', JSON.stringify(cache));
-
+            window.location.reload();
           }
           )
           .catch(error => {
@@ -1785,7 +1788,9 @@ const lib = async (path) => {
     }
   }
    
+  });
 };
+ 
 const libManager = {
   modules:  localStorage.getItem('lib_modules') || '{}',
   listModules: () => {
@@ -4440,7 +4445,7 @@ window.React._render = (component) => {
   }
 }
 
-window.visiVersion = "1.8.3-stable"
+window.visiVersion = "1.8.7-stable"
 fetch('https://registry.npmjs.org/visi.js').then(res => res.json()).then(json => {
   if (json['dist-tags'].latest !== visiVersion) {
     console.assert(false, `You are using an outdated version of Visi.js. Please update to ${json['dist-tags'].latest} by running npx visiapp@latest create <your_app_name>`, {
