@@ -8,7 +8,7 @@ app.use('/')
 app.use('/team')
 app.use('/releases')
 app.use('/docs')
-updateCacheVersion(2)
+updateCacheVersion(3)
 app.root("/", (req, res) =>{
     dispose('./views/main.jsx', (Main) =>{
         res.title("Home")
