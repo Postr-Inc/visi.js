@@ -41,7 +41,7 @@ Features:
 * better tsx support! v1.8+
  
 
-[Website](https://visijs.postr-inc.me/) | [Docs](https://postr-inc.gitbook.io/visi.js-docs/)
+[Website](https://visijs.postr-inc.me/) | [Docs](https://visijs.postr-inc.me/#/docs/en-US/v1.8.8/intro)
 | [Discord](https://discord.gg/RGYQKENTRk)
   
  
