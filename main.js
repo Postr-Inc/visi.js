@@ -8,7 +8,7 @@ app.use('/')
 app.use('/team')
 app.use('/releases')
 app.use('/docs')
-updateCacheVersion(3)
+updateCacheVersion(4)
 app.root("/", (req, res) =>{
     dispose('./views/main.jsx', (Main) =>{
         res.title("Home")
@@ -64,7 +64,7 @@ app.get('/', (req, res) =>{
     })
 })
 
-app.get('/docs/:lang/:page', (req, res) =>{
+app.get('/docs/:lang/:version/:page', (req, res) =>{
     let page = req.params.page
     dispose(`./views/docs/docs.jsx`, (Docs) =>{
         res.title("Docs")
@@ -72,12 +72,14 @@ app.get('/docs/:lang/:page', (req, res) =>{
         res.jsx(<Docs/>)
     },{
         page: page,
-        lang: req.params.lang
+        lang: req.params.lang,
+        version: req.params.version
+        
     
     })
 })
 
-app.on('/docs/:lang/:page', (req, res) =>{
+app.on('/docs/:lang/:version/:page', (req, res) =>{
     let page = req.params.page
     dispose(`./views/docs/docs.jsx`, (Docs) =>{
         res.title(page)
@@ -85,7 +87,8 @@ app.on('/docs/:lang/:page', (req, res) =>{
         res.jsx(<Docs/>)
     },{
         page: page,
-        lang: req.params.lang
+        lang: req.params.lang,
+        version: req.params.version
     
     })
     res.return()

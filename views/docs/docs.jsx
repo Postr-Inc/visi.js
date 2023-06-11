@@ -4,8 +4,11 @@ function docs(props){
   let [page, setPage] = useState('')
   let [screenS, setScreen] = useState({width:window.innerWidth, height:window.innerHeight})
   let [pageContent, setPageContent] = useState('')
+  let [open, setOpen] = useState(false)
+  let version  =  props.version ? props.version : 'v1.8.8'
+  
   useEffect(() => {
-    dispose(`./views/docs/pages/${props.lang}/${props.page}.jsx`, (Page) =>{
+    dispose(`./views/docs/pages/${props.lang}/${version}/${props.page}.jsx`, (Page) => {
         setPage(<Page />)
         
     })
@@ -90,33 +93,75 @@ function docs(props){
     <label for="my-drawer-2" class="drawer-overlay"></label> 
     <ul class="menu p-4 flex w-54 h-full bg-base-100 border  font-medium border-t-0 border-slate-200 rounded  text-base-content">
      <li>
-    <details {...window.location.hash ===  `#/docs/${props.lang}/intro`  ? {open:true} : {}} >
+    <details open="false"
+      {...window.location.hash ===  `#/docs/${props.lang}/${version}/intro`   || `#/${props.lang}/${version}/essentials`   ? {open:true} : {}  }
+      
+    >
       <summary>Getting Started</summary>
       <ul>
         <li><a
-        href="#/docs/en-US/intro"
-        {...window.location.hash ===  `#/docs/${props.lang}/intro`  ? {className:'text-sky-500'} : {}}
+        href={`#/docs/en-US/${version}/intro`}
+        {...window.location.hash ===  `#/docs/${props.lang}/${version}/intro`  ? {className:'text-sky-500'} : {}}
         >Introduction</a></li>
         <li>
-           
+        <a
+        href={`#/docs/en-US/${version}/essentials`}
+        {...window.location.hash ===  `#/docs/${props.lang}/${version}/essentials`  ? {className:'text-sky-500'} : {}}
+        >Creating An Application</a> 
         </li>
+         
       </ul>
       
     </details>
-    <details {...window.location.hash ===  `#/docs/${props.lang}/essentials`  ? {open:true} : {}} >
-      <summary>Essentials</summary>
+    
+    <details
+    open="false" 
+    {...window.location.hash ===  `#/docs/${props.lang}/dispose`  || `#/docs/${props.lang}/filesystem`   
+    || `#/docs/${props.lang}/${version}/graphStore`   || `#/docs/${props.lang}/${version}/SQLStore`   || `#/docs/${props.lang}/${version}/ReactRouter`   
+    || `#/docs/${props.lang}/${version}/ReactRouterV2`   ? {open:true} : {}  }>
+      <summary>visi.js@1.8.8</summary>
       <ul>
+       
         <li><a
-        href="#/docs/en-US/essentials"
-        {...window.location.hash ===  `#/docs/${props.lang}/essentials`  ? {className:'text-sky-500'} : {}}
-        >Creating an Application</a></li>
-        <li>
-           
-        </li>
+        href={ `#/docs/${props.lang}/${version}/dispose`}
+        {...window.location.hash ===  `#/docs/${props.lang}/${version}/dispose`  ? {className:'text-sky-500'} : {}}
+        >dispose()</a></li>
+          <li> <a 
+        href={`#/docs/${props.lang}/${version}/lib`}
+        {...window.location.hash ===  `#/docs/${props.lang}/${version}/lib`  ? {className:'text-sky-500'} : {}}
+        >lib()</a></li>
+        <li><a
+        {...window.location.hash ===  `#/docs/${props.lang}/${version}/filesystem`  ? {className:'text-sky-500'} : {}
+        }
+        href={`#/docs/${props.lang}/${version}/filesystem`}
+        >filesystem</a></li>
+        <li><a
+        href={`#/docs/${props.lang}/${version}/graphstore`}
+        {...window.location.hash ===  `#/docs/${props.lang}/${version}/graphstore`  ? {className:'text-sky-500'} : {}}
+
+        >graphStore</a></li>
+        <li><a
+        
+         href={`#/docs/${props.lang}/${version}/sqlstore`}
+          {...window.location.hash ===  `#/docs/${props.lang}/${version}/sqlstore`  ? {className:'text-sky-500'} : {}}
+
+         
+        >SQLStore</a></li>
+        <li><a
+        href={`#/docs/${props.lang}/${version}/ReactRouter`}
+        {
+            ...window.location.hash ===  `#/docs/${props.lang}/${version}/ReactRouter`  ? {className:'text-sky-500'} : {}
+        }
+        >
+         
+        ReactRouter</a></li>
+        <li><a>
+        
+        ReactRouterV2</a></li>
       </ul>
-      
     </details>
   </li>
+    
     </ul>
   
   </div>
