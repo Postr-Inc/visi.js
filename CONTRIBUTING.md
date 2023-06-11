@@ -3,7 +3,7 @@ Please read this if you are planning to join us in making client sided libraries
 
 ## How to contribute
 1. Fork this repository
-2. Make changes to the unminified.js file - correctly write the changes in the description day you have changed and reasoning
+2. Make changes to the unminified.js file - correctly write the changes in the description, day you have changed and reasoning
 3. Submit a pull request
 
 ## example
