@@ -1,11 +1,22 @@
 window.onload = () => {
    let debugOn = document.querySelector("html").hasAttribute("debug");
-    
+   const head = document.getElementsByTagName('head')[0];
+   if (!head.querySelector('link[rel="icon"]')) {
+     const link = document.createElement('link');
+     link.rel = 'icon';
+     link.href = 'https://github.com/Postr-Inc/visi.js/blob/main/assets/visilogo.png?raw=true';
+     head.appendChild(link);
+   }
   if (!document.querySelector('html').hasAttribute('data-env')) {
     if (debugOn) {
       console.warn('⚠️ you are in development mode please set data-env="production" to enable production mode')
     }
+  }
+  let cache_names = ['lib_cache', 'pako_cache', 'dispose_cache', 'react_cache']
+   
   
+
+    
     let performanceObserver = new PerformanceObserver((list) => {
       const performanceEntries = [];
   
@@ -28,7 +39,7 @@ window.onload = () => {
     });
   
     performanceObserver.observe({ entryTypes: ['paint', 'layout-shift', 'largest-contentful-paint'] });
-  }
+ 
   
       if (document.querySelector("html").getAttribute("data-env") === "production") {
   
@@ -84,28 +95,43 @@ window.onload = () => {
         console.warn("Not in production mode, skipping asset optimization.");
         console.log(getBundleSize())
       }
-  
+      
+    }
+
+    if ('caches' in window) {
+      caches.keys().then((names) => {
+        names.forEach((name) => {
+           
+          caches.open(name) 
+        });
+      })
+    }
+    
    
-  }
-async function lib (path = null) {
-  let promise = new Promise((resolve, reject) => {
-  if(!path) throw new Error("[Library Manager]: No path provided");
-  let cache =  JSON.parse(localStorage.getItem('lib_modules')) || {};
-
-  // Check if CFR is enabled
-  const isCFREnabled = document.querySelector("html").getAttribute("data-render") === "cfr";
-
-  if (path.startsWith("@tailwind/daisyui")) {
-    let version = path.split("/daisyui@")[1];
-    console.log(version);
-
-    if (isCFREnabled) {
-
-      // Check if daisyui is in cache
-      if (!cache.daisyui || cache.daisyuiVersion !== version) {
-           let script = document.createElement('script');
-           let link = document.createElement('link');
-           document.body.style.display = "none";
+ 
+  async function lib(path = null) {
+    let promise = new Promise(async (resolve, reject) => {
+      if (!path) throw new Error("[Library Manager]: No path provided");
+  
+      // Check if CFR is enabled
+      const isCFREnabled = document.querySelector("html").getAttribute("data-render") === "cfr";
+  
+      // Open the cache
+      const cache = await caches.open('lib_cache');
+      const cachedResponse = await cache.match('lib_modules');
+      const cached = cachedResponse ? await cachedResponse.json() : {};
+      if (path.startsWith("@tailwind/daisyui")) {
+        let version = path.split("/daisyui@")[1];
+        console.log(version);
+  
+        if (isCFREnabled) {
+          // Check if daisyui is in cache
+          
+  
+          if (!cached.daisyui || cached.daisyuiVersion !== version) {
+            let script = document.createElement('script');
+            let link = document.createElement('link');
+            document.body.style.display = "none";
             link.rel = "preload";
             link.as = "script";
             link.href = `https://cdn.tailwindcss.com`;
@@ -122,461 +148,234 @@ async function lib (path = null) {
               }, 20);
               document.head.removeChild(script);
             }
-   
-            
- 
-        fetch('https://cdn.jsdelivr.net/npm/visi.js@1.8.6-stable/modules/tailwind.min.js')
-          .then(response => response.text())
-          .then(data => {
-            cache.tailwindcss = data;
-            localStorage.setItem('lib_modules', JSON.stringify(cache));
-            let script = document.createElement('script');
-            script.innerHTML = data;
-            document.head.appendChild(script);
-            
-            
-          })
-          .catch(error => {
-            console.log(error);
-          });
-        fetch(`https://cdn.jsdelivr.net/npm/daisyui@${version}/dist/full.css`).then(
-          res => res.text()
-        ).then(
-          data => {
-            cache.daisyui = data;
-            cache.daisyuiVersion = version;
-            localStorage.setItem('lib_modules', JSON.stringify(cache));
+  
+            fetch('https://cdn.jsdelivr.net/npm/visi.js@1.8.6-stable/modules/tailwind.min.js')
+              .then(response => response.text())
+              .then(data => {
+                cached.tailwindcss = data;
+                cached.tailwindcssVersion = version;
+                cache.put('lib_modules', new Response(JSON.stringify(cached)));
+                let script = document.createElement('script');
+                script.innerHTML = data;
+                document.head.appendChild(script);
+              })
+              .catch(error => {
+                console.log(error);
+              });
+  
+            fetch(`https://cdn.jsdelivr.net/npm/daisyui@${version}/dist/full.css`).then(
+              res => res.text()
+            ).then(
+              data => {
+                document.body.style.display = "none";
+                cached.daisyui = data;
+                cached.daisyuiVersion = version;
+                cache.put('lib_modules', new Response(JSON.stringify(cached)));
+                let style = document.createElement('style');
+                style.innerHTML = data;
+                document.head.appendChild(style);
+                style.onload = () => {
+                  setTimeout(() => {
+                    document.body.style.display = "block";
+                  }, 20);
+                }
+
+              }
+            );
+          } else {
+            document.body.style.display = "none";
             let style = document.createElement('style');
-            style.innerHTML = data;
+            style.innerHTML = cached.daisyui;
+            let script = document.createElement('script');
+            script.innerHTML = cached.tailwindcss;
+            document.body.style.display = "none";
+            document.head.appendChild(script);
             document.head.appendChild(style);
+            style.onload = () => {
+              if (debug.enabled) {
+                setTimeout(() => {
+                  document.body.style.display = "block";
+                }, 40);
+              } else {
+                document.body.style.display = "block";
+              }
+            }
             
           }
-        );
-         
-      } else {
-        let start = performance.now();
-        let style = document.createElement('style');
-        style.innerHTML = cache.daisyui;
-        let script = document.createElement('script');
-        script.innerHTML = cache.tailwindcss;
-        document.body.style.display = "none";
-        document.head.appendChild(script);
-
-        document.head.appendChild(style);
-
-        style.onload = () => {
-           
-          if (debug.enabled) {
-            console.log(`[VISI] DaisyUI loaded in ${performance.now() - start}ms`);
-          }
         }
-        document.body.style.display = "block";
-
-      }
-    } else {
-      // Load modules regularly without caching
-
-
-      let link = document.createElement('link');
-      link.rel = "preload";
-      link.as = "script";
-      link.href = `https://cdn.tailwindcss.com`;
-      document.head.appendChild(link);
-
-      let daisylink = document.createElement('link');
-      daisylink.rel = "preload";
-      
-      daisylink.as = "style";
-      daisylink.href = `https://cdn.jsdelivr.net/npm/daisyui@${version}/dist/full.css`;
-      document.head.appendChild(daisylink);
-
-      let script = document.createElement('script');
-      script.src = `https://cdn.tailwindcss.com`
-      script.id = 'tailwindcss';
-      document.head.appendChild(script);
-
-
-
-      let daisy = document.createElement('link');
-      daisy.rel = "stylesheet";
-      daisy.href = `https://cdn.jsdelivr.net/npm/daisyui@${version}/dist/full.css`;
-      document.head.appendChild(daisy);
-
-      if (!document.getElementById("tailwindcss")) {
-        document.head.appendChild(script);
-      }
-
-      script.onload = () => {
-        document.head.removeChild(script);
-        if (debug.enabled) {
-          console.log(`[VISI] TailwindCSS loaded in ${performance.now() - start}ms`);
-        }
-         
-      }
-    }
-  }
-
-  if (path.startsWith("@tailwind/core")) {
-    if (isCFREnabled) {
-      // Check if tailwindcore is in cache
-      if (!cache.tailwindcore) {
-        fetch('https://cdn.jsdelivr.net/npm/visi.js@1.8.6-stable/modules/tailwind.min.js')
-          .then(response => response.text())
-          .then(data => {
-            cache.tailwindcss = data;
-            localStorage.setItem('lib_modules', JSON.stringify(cache));
-           
-          }
-          )
-          .catch(error => {
-            console.log(error);
-          }
-          );
-          
-        console.log("Loading tailwindcss from CDN");
-        let script = document.createElement('script');
-       
-        script.innerHTML = cache.tailwindcss;
-        document.head.appendChild(script);
-      }
-    } else {
-      // Load modules regularly without caching
-      let link = document.createElement('link');
-      link.rel = "preload";
-      link.as = "script";
-      link.href = `https://cdn.tailwindcss.com`;
-      document.head.appendChild(link);
-
-      let script = document.createElement('script');
-      script.src = `https://cdn.tailwindcss.com`;
-      script.id = 'tailwindcss';
-      document.head.appendChild(script);
-
-      if (!document.getElementById("tailwindcss")) {
-        document.head.appendChild(script);
-      }
-
-      script.onload = () => {
-        document.head.removeChild(script);
-        
-      }
-    }
-  }
-  if (path.startsWith('@tailwindcss')) {
-    let plugins = path.split("@tailwindcss/")[1];
-    plugins = plugins.split(",");
-    if (isCFREnabled) {
-      if (!cache.tailwindcss) {
-        fetch(`https://cdn.jsdelivr.net/npm/visi.js@1.8.6-stable/modules/tailwind.min.js`)
-          .then(response => response.text())
-          .then(data => {
-            cache.tailwindcss = data;
-            localStorage.setItem('lib_modules', JSON.stringify(cache));
-            window.location.reload();
-          }
-          )
-          .catch(error => {
-            console.log(error);
-          }
-          );
-        console.log("Loading tailwindcss from CDN");
-        let script = document.createElement('script');
-        
-        script.innerHTML = cache.tailwindcss;
-        document.head.appendChild(script);
-
-
-      }
-      else {
-        let script = document.createElement('script');
-        let path = `https://cdn.tailwindcss.com?plugins=${plugins}`;
-        script.src = path;
-        script.id = 'tailwindcss';
-        document.head.appendChild(script);
-        
-        script.onload = () => {
-          document.head.removeChild(script);
-        }
-
-      }
-
-    }
-  }
-  if (path.startsWith('@bootstrap/core')) {
-    let version = path.split("@bootstrap/core@")[1];
-
-    if (isCFREnabled) {
-      if (!cache.bootstrapcss && !cache.bootstrapjs || cache.bootstrapVersion !== version) {
-        fetch(`https://cdn.jsdelivr.net/npm/bootstrap@${version}/dist/css/bootstrap.min.css`)
-          .then(response => response.text())
-          .then(data => {
-            cache.bootstrapcss = data;
-            cache.bootstrapVersion = version;
-            localStorage.setItem('lib_modules', JSON.stringify(cache));
-            let style = document.createElement('style');
-            style.innerHTML = data;
-          }
-          )
-        fetch(`https://cdn.jsdelivr.net/npm/bootstrap@${version}/dist/js/bootstrap.bundle.min.js`)
-          .then(response => response.text())
-          .then(data => {
-            cache.bootstrapjs = data;
-            localStorage.setItem('lib_modules', JSON.stringify(cache));
+      }else if(path.startsWith("@tailwind/core")){
+         if(isCFREnabled){
+           if(!cached.tailwindcss){
+              let script = document.createElement('script');
+              script.innerHTML = await fetch('https://cdn.jsdelivr.net/npm/visi.js@latest/modules/tailwind.min.js').then(res => res.text());
+              document.head.appendChild(script);
+              cached.tailwindcss = await fetch('https://cdn.jsdelivr.net/npm/visi.js@latest/modules/tailwind.min.js').then(res => res.text());
+              cache.put('lib_modules', new Response(JSON.stringify(cached)));
+           }else{
+            
+              let script = document.createElement('script');
+              script.innerHTML = cached.tailwindcss;
+              document.head.appendChild(script);
+           }
+         }else{
+            document.body.style.display = "none";
             let script = document.createElement('script');
-            script.innerHTML = data
+            script.src = 'https://cdn.jsdelivr.net/npm/visi.js@latest/modules/tailwind.min.js'
             document.head.appendChild(script);
-          }
-          )
-          .catch(error => {
-            console.log(error);
-          }
-          );
+            script.onload = () => {
+              setTimeout(() => {
+                document.body.style.display = "block";
+              }, 20);
+            }
 
-      } else {
-        if(debug.enabled){
-          console.log(`[VISI] Bootstrap v${version} loaded from cache`);
-        }
-        let script = document.createElement('script');
 
-        script.innerHTML = cache.bootstrapjs;
-        document.head.appendChild(script);
-        let style = document.createElement('style');
-        style.innerHTML = cache.bootstrapcss;
-        document.head.appendChild(style);
-        
-      }
-    } else {
-      let start = performance.now();
-      let link = document.createElement('link');
-      link.rel = "preload";
-      link.as = "script";
-      link.href = `https://cdn.jsdelivr.net/npm/bootstrap@${version}/dist/js/bootstrap.min.js`;
-      let style = document.createElement('link');
-      style.rel = "stylesheet";
-      style.href = `https://cdn.jsdelivr.net/npm/bootstrap@${version}/dist/css/bootstrap.min.css`;
-      document.head.appendChild(style);
-
-      document.head.appendChild(link);
-      let script = document.createElement('script');
-      script.src = `https://cdn.jsdelivr.net/npm/bootstrap@${version}/dist/js/bootstrap.min.js`;
-      script.id = 'bootstrap';
-
-      if (!document.getElementById("bootstrap")) {
-        document.head.appendChild(script);
-        script.onload = () => {
-          document.head.removeChild(script);
-          if (debug.enabled) {
-            console.log(`Bootstrap loaded in ${performance.now() - start}ms`);
-          }
-        }
-      }
-    }
-  }
-  if (path.startsWith('@bootstrap/icons')) {
-    let version = path.split("@bootstrap/icons@")[1];
-    if (isCFREnabled) {
-      if (!cache.bootstrapicons) {
-        fetch(`https://cdn.jsdelivr.net/npm/bootstrap-icons@${version}/font/bootstrap-icons.css`)
-          .then(response => response.text())
-          .then(data => {
-            cache.bootstrapicons = data;
-            localStorage.setItem('lib_modules', JSON.stringify(cache));
+         }
+      }else if(path.startsWith("@bootstrap")){
+        let version = path.split("/bootstrap@")[1] || "latest"
+        if(isCFREnabled){
+          if(!cached.bootstrap || cached.bootstrapVersion !== version){
+            let script = document.createElement('script');
             let style = document.createElement('style');
-            style.innerHTML = data;
+            script.innerHTML = await fetch(`https://cdn.jsdelivr.net/npm/bootstrap@${version}/dist/js/bootstrap.bundle.min.js`).then(res => res.text());
+             
+            style.innerHTML = await fetch(`https://cdn.jsdelivr.net/npm/bootstrap@${version}/dist/css/bootstrap.min.css`).then( res => {
+              let data = res.text();
+              console.log(data);
+              return data;
+            })
+            document.head.appendChild(script);
             document.head.appendChild(style);
-          }
-          )
-          .catch(error => {
-            console.log(error);
-          }
-          );
-      } else {
-        let style = document.createElement('style');
-        style.innerHTML = cache.bootstrapicons;
-        document.head.appendChild(style);
-         
-      }
-    } else {
-
-      let link = document.createElement('link');
-      link.rel = "preload";
-      link.as = "style";
-      link.href = `https://cdn.jsdelivr.net/npm/bootstrap-icons@${version}/font/bootstrap-icons.css`;
-      document.head.appendChild(link);
-      let style = document.createElement('link');
-      style.rel = "stylesheet";
-      style.href = `https://cdn.jsdelivr.net/npm/bootstrap-icons@${version}/font/bootstrap-icons.css`;
-    }
-  }
-  if (path.startsWith('@d3.js')) {
-    let version = path.split("@d3.js@")[1] || "7";
-    let url = `https://cdn.jsdelivr.net/npm/d3@${version}/+esm`;
-    if (isCFREnabled) {
-      if (!cache.d3 || cache.d3Version !== version) {
-        fetch(url)
-          .then(response => response.text())
-          .then(data => {
-            cache.d3 = data;
-            localStorage.setItem('lib_modules', JSON.stringify(cache));
+            cached.bootstrap =  {
+              script: script.innerHTML,
+              style: style.innerHTML
+            }
+            cached.bootstrapVersion = version;
+            cache.put('lib_modules', new Response(JSON.stringify(cached)));
+          }else{
+            document.body.style.display = "none";
             let script = document.createElement('script');
-            script.innerHTML = data;
+            script.innerHTML = cached.bootstrap.script;
+            let style = document.createElement('style');
+            style.innerHTML = cached.bootstrap.style;
             document.head.appendChild(script);
-          }
-          )
-          .catch(error => {
-            console.log(error);
-          }
-          );
-      } else {
-        let script = document.createElement('script');
-        script.innerHTML = cache.d3;
-        document.head.appendChild(script);
-    
-      }
-    }
-    else {
-      let link = document.createElement('link');
-      link.rel = "preload";
-      link.as = "script";
-      link.href = url;
-      document.head.appendChild(link);
-      let script = document.createElement('script');
-      script.src = url;
-      script.id = 'd3';
-      document.head.appendChild(script);
-      script.onload = () => {
-        document.head.removeChild(script);
-      }
-    }
+            document.head.appendChild(style );
+           style.onload = () => {
+              setTimeout(() => {
+                document.body.style.display = "block";
+              }, 20);
+            }
 
-  }
-  if (path.startsWith('@chart.js')) {
-    let version = path.split("@chart.js@")[1] || "4.3.0";
-    let url = `https://cdn.jsdelivr.net/npm/chart.js@${version}/dist/chart.umd.min.js`
-    if (isCFREnabled) {
-      if (!cache.chartjs || cache.chartjsVersion !== version) {
-        fetch(url)
-          .then(response => response.text())
-          .then(data => {
-            cache.chartjs = data;
-            cache.chartjsVersion = version;
-            localStorage.setItem('lib_modules', JSON.stringify(cache));
-            let script = document.createElement('script');
-
-            script.innerHTML = data;
-            document.head.appendChild(script);
           }
-          )
-          .catch(error => {
-            console.log(error);
-          }
-          );
-      } else {
-        let script = document.createElement('script');
-        script.innerHTML = cache.chartjs;
-        document.head.appendChild(script);
-         
-      }
-    }
-    else {
-      let link = document.createElement('link');
-      link.rel = "preload";
-      link.as = "script";
-     link.href = url;
-      document.head.appendChild(link);
-      let script = document.createElement('script');
-      script.src = url;
-      script.id = 'chartjs';
-      document.head.appendChild(script);
-      script.onload = () => {
-        document.head.removeChild(script);
-      }
-    }
-  }
-
-  if(path.startsWith('@mastercss')){
-    let version = path.split("@mastercss@")[1] || "css";
-    let url = version === "css" ? "https://cdn.master.co/css" : `https://cdn.master.co/css@${version}`;
-    if (isCFREnabled) {
-     if(!cache.mastercss  || cache.mastercssVersion !== version){
-      fetch(url)
-      .then(response => response.text())
-      .then(data => {
-        cache.mastercss = data;
-        cache.mastercssVersion = version;
-        localStorage.setItem('lib_modules', JSON.stringify(cache));
-        let style = document.createElement('style');
-        style.innerHTML = data;
-        document.head.appendChild(style);
-      }
-      )
-      .catch(error => {
-        console.log(error);
-      }
-      );
-      }else{
-        let style = document.createElement('style');
-        style.innerHTML = cache.mastercss;
-        document.head.appendChild(style);
-      }
-    }else{
-      let link = document.createElement('link');
-      link.rel = "preload";
-      link.as = "style";
-      link.href = url;
-      document.head.appendChild(link);
-      let style = document.createElement('link');
-      style.rel = "stylesheet";
-      style.href = url;
-      document.head.appendChild(style);
-    }
-
-  }
-  if(path.startsWith('@threejs')){
-    let version = path.split("@threejs@")[1] || "latest";
-    let url =  `https://cdn.jsdelivr.net/npm/three@${version}`;
-    if (isCFREnabled) {
-      if(!cache.threejs || cache.threejsVersion !== version){
-        fetch(url)
-        .then(response => response.text())
-        .then(data => {
-          cache.threejs = data;
-          cache.threejsVersion = version;
-          localStorage.setItem('lib_modules', JSON.stringify(cache));
+        }else{
+          document.body.style.display = "none";
           let script = document.createElement('script');
-          script.innerHTML = data;
+          script.src = `https://cdn.jsdelivr.net/npm/bootstrap@${version}/dist/js/bootstrap.bundle.min.js`;
+          let style = document.createElement('link');
+          style.rel = "stylesheet";
+          style.href = `https://cdn.jsdelivr.net/npm/bootstrap@${version}/dist/css/bootstrap.min.css`;
+          document.head.appendChild(style);
           document.head.appendChild(script);
+          script.onload = () => {
+            setTimeout(() => {
+              document.body.style.display = "block";
+            }, 20);
+          }
         }
-        )
-        .catch(error => {
-          console.log(error);
-        }
-        );
+       
       }
-      else{
-        let script = document.createElement('script');
-        script.innerHTML = cache.threejs;
-        document.head.appendChild(script);
-      }
-    }else{
-      let link = document.createElement('link');
-      link.rel = "preload";
-      link.as = "script";
-      link.href = url;
-      document.head.appendChild(link);
-      let script = document.createElement('script');
-      script.src = url;
-      script.id = 'threejs';
-      document.head.appendChild(script);
-      script.onload = () => {
-        document.head.removeChild(script);
+  
+      // Resolve the promise
+      resolve();
+    });
+  
+    return await promise;
+  }
+  
+  
+ 
+async function loadReactFromUnpkg(version) {
+  let env = document.querySelector("html").getAttribute("data-env") || "development";
+
+  try {
+    const response = env === "development"
+      ? await fetch(`https://unpkg.com/react@${version}/umd/react.development.js`)
+      : await fetch(`https://unpkg.com/react@${version}/umd/react.production.min.js`);
+    const reactScript = await response.text();
+
+    const domResponse = env === "development"
+      ? await fetch(`https://unpkg.com/react-dom@${version}/umd/react-dom.development.js`)
+      : await fetch(`https://unpkg.com/react-dom@${version}/umd/react-dom.production.min.js`);
+    const domScript = await domResponse.text();
+
+    console.log(`[VISI] React version: ${version} loaded from unpkg`);
+
+    const script = document.createElement("script");
+    script.innerHTML = reactScript;
+    document.head.appendChild(script);
+
+    const domScriptElement = document.createElement("script");
+    domScriptElement.innerHTML = domScript;
+    document.head.appendChild(domScriptElement);
+
+    const React_Cache = await getReactCache();
+    React_Cache.push({ key: "react", version: version, data: reactScript });
+    React_Cache.push({ key: "react-dom", version: version, data: domScript });
+    await saveReactCache(React_Cache);
+
+    window.ReactDOM = ReactDOM;
+    window.React = React;
+  } catch (error) {
+    console.error("Failed to load React from unpkg:", error);
+  }
+}
+
+async function clearReactCache() {
+  try {
+    if ('caches' in window) {
+      await caches.delete('react_cache');
+    }
+  } catch (error) {
+    console.error("Failed to clear React cache:", error);
+  }
+}
+
+async function getReactCache() {
+  try {
+    if ('caches' in window) {
+      const cache = await caches.open('react_cache');
+      const response = await cache.match('react');
+      const domResponse = await cache.match('react-dom');
+
+      if (response && domResponse) {
+        const reactScript = await response.text();
+        const domScript = await domResponse.text();
+
+        return [
+          { key: 'react', data: reactScript },
+          { key: 'react-dom', data: domScript }
+        ];
       }
     }
+
+    return [];
+  } catch (error) {
+    console.error("Failed to get React cache:", error);
+    return [];
   }
-   
-  });
-};
- 
+}
+
+async function saveReactCache(cache) {
+  try {
+    if ('caches' in window) {
+      const cacheStorage = await caches.open('react_cache');
+      await cacheStorage.put('react', new Response(cache[0].data));
+      await cacheStorage.put('react-dom', new Response(cache[1].data));
+    }
+  } catch (error) {
+    console.error("Failed to save React cache:", error);
+  }
+}
+
 async function loadReact() {
   const debugOn = document.querySelector("html").hasAttribute("debug");
   const cfr = document.querySelector("html").getAttribute("data-render") === "cfr";
@@ -584,7 +383,7 @@ async function loadReact() {
 
   if (debugOn) {
     console.log(`[VISI] React version: ${react_version} loaded`);
-    console.log('[VISI] Environment:', document.querySelector("html").getAttribute("data-env") || 'production (default)' );
+    console.log('[VISI] Environment:', document.querySelector("html").getAttribute("data-env") || 'production (default)');
   }
 
   if (cfr) {
@@ -624,25 +423,27 @@ async function loadReact() {
   }
 }
 
-async function loadPako(){
+
+async function loadPako() {
   const debugOn = document.querySelector("html").hasAttribute("debug");
   const cfr = document.querySelector("html").getAttribute("data-render") === "cfr";
-  const pako_version =  "2.1.0"
-  if(debugOn){
+  const pako_version =  "2.1.0";
+  
+  if (debugOn) {
     console.log(`[VISI] Pako version: ${pako_version} loaded`);
     console.log('[VISI] Environment:', document.querySelector("html").getAttribute("data-env") || 'production (default)' );
   }
 
-  if(cfr){
+  if (cfr) {
     const latestVersionRes = await fetch("https://registry.npmjs.org/pako");
     const latestVersionData = await latestVersionRes.json();
     const latestVersion = latestVersionData['dist-tags'].latest;
 
-    if(pako_version !== latestVersion){
+    if (pako_version !== latestVersion) {
       await clearPakoCache();
       await loadPakoFromUnpkg(latestVersion);
-    }else{
-      if(debugOn){
+    } else {
+      if (debugOn) {
         console.log(`[VISI] Pako version: ${pako_version} is up to date`);
       }
     }
@@ -652,218 +453,81 @@ async function loadPako(){
 
     const pako = Pako_Cache.find((item) => item.key === "pako");
 
-    if(pako){
+    if (pako) {
       let script = document.createElement("script");
       script.innerHTML = pako.data;
       document.head.appendChild(script);
-    }else{
+    } else {
       await loadPakoFromUnpkg(version);
     }
   }
-
 }
-async function loadPakoFromUnpkg(version){
+
+async function loadPakoFromUnpkg(version) {
   let env = document.querySelector("html").getAttribute("data-env") || "development";
 
-  try{
+  try {
     const response = env === "development"
-    ? await fetch(`https://unpkg.com/pako@${version}/dist/pako.js`)
-    : await fetch(`https://unpkg.com/pako@${version}/dist/pako.min.js`);
+      ? await fetch(`https://unpkg.com/pako@${version}/dist/pako.js`)
+      : await fetch(`https://unpkg.com/pako@${version}/dist/pako.min.js`);
+
     const pakoScript = await response.text();
-    const Pako_Cache = await getPakoCache();
-    Pako_Cache.push({key: "pako", version: version, data: pakoScript});
-    await savePakoCache(Pako_Cache);
+    const pakoCache = await getPakoCache();
+
+    pakoCache.push({ key: "pako", version: version, data: pakoScript });
+    await savePakoCache(pakoCache);
+
     let script = document.createElement("script");
     script.innerHTML = pakoScript;
     document.head.appendChild(script);
-  }catch(error){
+  } catch (error) {
     console.error("Failed to load Pako from unpkg:", error);
   }
 }
-async function clearPakoCache(){
-  try{
-    const db = await getPakoIndexedDB();
-    if(db.objectStoreNames.contains("pako_cache")){
-      const transaction = db.transaction("pako_cache", "readwrite");
-      const objectStore = transaction.objectStore("pako_cache");
 
-      objectStore.clear();
+async function clearPakoCache() {
+  try {
+    if ('caches' in window) {
+      await caches.delete('pako_cache');
     }
-  }catch(error){
+  } catch (error) {
     console.error("Failed to clear Pako cache:", error);
   }
 }
-async function getPakoCache(){
-  try{
-    const db = await getPakoIndexedDB();
-    if(db.objectStoreNames.contains("pako_cache")){
-      const transaction = db.transaction("pako_cache", "readonly");
-      const objectStore = transaction.objectStore("pako_cache");
-      const request = objectStore.getAll();
-      return new Promise((resolve, reject) => {
-        request.onsuccess = function(){
-          resolve(request.result);
-        }
-        request.onerror = function(event){
-          reject(event.target.error);
-        }
-      });
+
+async function getPakoCache() {
+  try {
+    if ('caches' in window) {
+      const cache = await caches.open('pako_cache');
+      const response = await cache.match('pako');
+
+      if (response) {
+        const pakoScript = await response.text();
+        return [{ key: 'pako', data: pakoScript }];
+      }
     }
+
     return [];
-  }catch(error){
-    console.error("Failed to get Pako cache:", error);
+  } catch (error) {
+    console.error('Failed to get Pako cache:', error);
     return [];
   }
 }
-async function savePakoCache(cache){
-  try{
-    const db = await getPakoIndexedDB();
-    const transaction = db.transaction("pako_cache", "readwrite");
-    const objectStore = transaction.objectStore("pako_cache");
-    objectStore.clear();
-    for(const item of cache){
-      objectStore.add(item);
+
+async function savePakoCache(cache) {
+  try {
+    if ('caches' in window) {
+      const cacheStorage = await caches.open('pako_cache');
+      await cacheStorage.put('pako', new Response(cache[0].data));
     }
-  }catch(error){
+  } catch (error) {
     console.error("Failed to save Pako cache:", error);
   }
 }
-function getPakoIndexedDB(){
-  return new Promise((resolve, reject) => {
-    const request = window.indexedDB.open("pako_cache_db", 1);
-    request.onupgradeneeded = function(){
-      const db = request.result;
-      if(!db.objectStoreNames.contains("pako_cache")){
-        db.createObjectStore("pako_cache", {keyPath: "key"});
-      }
-    }
-    request.onsuccess = function(){
-      resolve(request.result);
-    }
-    request.onerror = function(event){
-      reject(event.target.error);
-    }
-  });
-}
-async function loadReactFromUnpkg(version) {
-  let env = document.querySelector("html").getAttribute("data-env") || "development";
 
-  try {
-    const response = env === "development"
-      ? await fetch(`https://unpkg.com/react@${version}/umd/react.development.js`)
-      : await fetch(`https://unpkg.com/react@${version}/umd/react.production.min.js`);
-    const reactScript = await response.text();
+ 
 
-    const domResponse = env === "development"
-      ? await fetch(`https://unpkg.com/react-dom@${version}/umd/react-dom.development.js`)
-      : await fetch(`https://unpkg.com/react-dom@${version}/umd/react-dom.production.min.js`);
-    const domScript = await domResponse.text();
 
-    console.log(`[VISI] React version: ${version} loaded from unpkg`);
-
-    const script = document.createElement("script");
-    script.innerHTML = reactScript;
-    document.head.appendChild(script);
-
-    const domScriptElement = document.createElement("script");
-    domScriptElement.innerHTML = domScript;
-    document.head.appendChild(domScriptElement);
-
-    const React_Cache = await getReactCache();
-    React_Cache.push({ key: "react", version: version, data: reactScript });
-    React_Cache.push({ key: "react-dom", version: version, data: domScript });
-    await saveReactCache(React_Cache);
-
-    window.ReactDOM = ReactDOM;
-    window.React = React;
-  } catch (error) {
-    console.error("Failed to load React from unpkg:", error);
-  }
-}
-
-async function clearReactCache() {
-  try {
-    const db = await getIndexedDB();
-
-    if (db.objectStoreNames.contains("react_cache")) {
-      const transaction = db.transaction("react_cache", "readwrite");
-      const objectStore = transaction.objectStore("react_cache");
-
-      objectStore.clear();
-    }
-  } catch (error) {
-    console.error("Failed to clear React cache:", error);
-  }
-}
-
-async function getReactCache() {
-  try {
-    const db = await getIndexedDB();
-
-    if (db.objectStoreNames.contains("react_cache")) {
-      const transaction = db.transaction("react_cache", "readonly");
-      const objectStore = transaction.objectStore("react_cache");
-
-      return new Promise((resolve, reject) => {
-        const request = objectStore.getAll();
-
-        request.onsuccess = function () {
-          resolve(request.result);
-        };
-
-        request.onerror = function (event) {
-          reject(event.target.error);
-        };
-      });
-    }
-
-    return [];
-  } catch (error) {
-    console.error("Failed to get React cache:", error);
-    return [];
-  }
-}
-
-async function saveReactCache(cache) {
-  try {
-    const db = await getIndexedDB();
-
-    const transaction = db.transaction("react_cache", "readwrite");
-    const objectStore = transaction.objectStore("react_cache");
-
-    objectStore.clear();
-
-    for (const item of cache) {
-      objectStore.add(item);
-    }
-  } catch (error) {
-    console.error("Failed to save React cache:", error);
-  }
-}
-
-function getIndexedDB() {
-  return new Promise((resolve, reject) => {
-    const request = window.indexedDB.open("react_cache_db", 1);
-
-    request.onupgradeneeded = function () {
-      const db = request.result;
-
-      if (!db.objectStoreNames.contains("react_cache")) {
-        db.createObjectStore("react_cache", { keyPath: "key" });
-      }
-    };
-
-    request.onsuccess = function () {
-      resolve(request.result);
-    };
-
-    request.onerror = function (event) {
-      reject(event.target.error);
-    };
-  });
-}
-
-await loadReact();
 await loadPako();
 class Lazy {
   constructor(data) {
@@ -1150,26 +814,7 @@ class JsonHandler {
     return results;
   }
 }
-window.ReactDOM = ReactDOM
-window.useState = React.useState
-window.useEffect = React.useEffect
-window.useContext = React.useContext
-window.useReducer = React.useReducer
-window.useRef = React.useRef
-window.useCallback = React.useCallback
-window.lazy = React.lazy
-window.forwardRef = React.forwardRef
-window.createContext = React.createContext
-window.startTransition = React.startTransition
-window.useSyncExternalStore = React.useSyncExternalStore
-window.useMemo = React.useMemo
-window.useLayoutEffect = React.useLayoutEffect
-window.useInsertionEffect = React.useInsertionEffect
-window.useImperativeHandle = React.useImperativeHandle
-window.useId = React.useId
-window.useDeferredValue = React.useDeferredValue
-window.useTransition = React.useTransition
-window.React = React
+
 let debug = {
   enabled: document.querySelector('html').hasAttribute('debug'),
   log: (args, type) => {
@@ -4249,22 +3894,10 @@ export const bcrypt = {
 };
 window.bcrypt = bcrypt;
 let root = null;
-window.React._render = (component) => {
 
-  return (container) => {
-    const el = document.getElementById(container);
-    if (!root) {
-
-      root = ReactDOM.createRoot(el);  
-    }
-
-    root.render(component);
-
-  }
-}
-window.visiVersion = "1.9.1-canary"
+window.visiVersion = "1.9.1-stable"
 fetch('https://registry.npmjs.org/visi.js').then(res => res.json()).then(json => {
-  if (json['dist-tags'].latest !== visiVersion) {
+  if (json['dist-tags'].latest !== visiVersion && debug.enabled) {
     console.warn(`You are using an outdated version of Visi.js. Please update to ${json['dist-tags'].latest} by running npx visiapp@latest create <your_app_name>`, {
       current: visiVersion,
       latest: json['dist-tags'].latest,
@@ -4274,13 +3907,7 @@ fetch('https://registry.npmjs.org/visi.js').then(res => res.json()).then(json =>
   console.error("Failed to check for updates. Error: " + err)
 })
  
-const head = document.getElementsByTagName('head')[0];
-if (!head.querySelector('link[rel="icon"]')) {
-  const link = document.createElement('link');
-  link.rel = 'icon';
-  link.href = 'https://github.com/Postr-Inc/visi.js/blob/main/assets/visilogo.png?raw=true';
-  head.appendChild(link);
-}
+
 let mainhtmlel = document.querySelector("html");
 let renderingtype = mainhtmlel.getAttribute("data-render");
 const CACHE_NAME = 'dispose_cache';
@@ -4314,7 +3941,7 @@ window.updateCacheVersion = updateCacheVersion;
 
 const tsWorkerFunction = () => {
   onmessage = (event) => {
-    importScripts('https://unpkg.com/@babel/standalone/babel.min.js');
+    importScripts('https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js');
     const { code, filename } = event.data;
     const compiledCode = Babel.transform(code, { presets: ['react', 'typescript'], filename: filename }).code;
     postMessage({ type: 'code', data: compiledCode, start: Date.now(), filename });
@@ -4407,7 +4034,7 @@ export { _export, require };
 const workerFunction = () => {
   onmessage =  (event) => {
      
-    importScripts('https://unpkg.com/@babel/standalone/babel.min.js');
+    importScripts('https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js');
 
     const { code } = event.data;
     const compiledCode = Babel.transform(code, { presets: ['react', 'typescript'] }).code;
@@ -4469,6 +4096,7 @@ const dispose = async (path, callback, props = {}) => {
 
       if (renderingtype === 'cfr' && cache) {
         const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+        let start = Date.now();
         const cacheData = {
           type: extension,
           data: compiledCode,
@@ -4492,9 +4120,7 @@ const dispose = async (path, callback, props = {}) => {
         }
       `);
 
-      if (debug.enabled) {
-        console.log(`Component from ${path} compiled in ${Date.now() - start}ms`);
-      }
+      
       const component = func(props);
       callback(component);
     });
@@ -4511,4 +4137,37 @@ window.dispose = dispose;
 
 export { dispose, updateCacheVersion };
 
- 
+await loadReact();
+window.ReactDOM = ReactDOM
+window.useState = React.useState
+window.useEffect = React.useEffect
+window.useContext = React.useContext
+window.useReducer = React.useReducer
+window.useRef = React.useRef
+window.useCallback = React.useCallback
+window.lazy = React.lazy
+window.forwardRef = React.forwardRef
+window.createContext = React.createContext
+window.startTransition = React.startTransition
+window.useSyncExternalStore = React.useSyncExternalStore
+window.useMemo = React.useMemo
+window.useLayoutEffect = React.useLayoutEffect
+window.useInsertionEffect = React.useInsertionEffect
+window.useImperativeHandle = React.useImperativeHandle
+window.useId = React.useId
+window.useDeferredValue = React.useDeferredValue
+window.useTransition = React.useTransition
+window.React = React
+window.React._render = (component) => {
+
+  return (container) => {
+    const el = document.getElementById(container);
+    if (!root) {
+
+      root = ReactDOM.createRoot(el);  
+    }
+
+    root.render(component);
+
+  }
+}
