@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" data-env="production"    data-theme="winter" data-render="cfr" data-react-version="18.2.0" >
+<html lang="en"   data-env="production" data-theme="winter">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-       <meta name="title" content="visi.js">
+    <meta name="title" content="visi.js">
     <meta name="description"
     content="visi.js is a react cdn extensive library built for production, and ease of development. It allows spa to have the functionality of mpa, aswell as providing similar speeds to ssr and ssg!">
     <meta name="keywords" content="react, visi.js, postr, meta, twitter, redux, nextjs">
@@ -12,18 +13,22 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="language" content="English">
     <meta name="revisit-after" content="1 days">
+    <!--- React imports-->
+    <script src="https://unpkg.com/react/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link rel="icon" type="image/x-icon" href="./assets/images/visilogo.png">
     <style>
         img {
-  filter: brightness(1.2) contrast(1.2) saturate(1.2);
-}
-
+            filter: brightness(1.2) contrast(1.2) saturate(1.2);
+        }
     </style>
 </head>
+
 <body>
     <div id="app"></div>
     <script src="./assets/visi.js/visi.min.js" type="module" data-type="module"></script>
     <script src="./main.js" type="text/babel" data-type="module"></script>
 </body>
+
 </html>

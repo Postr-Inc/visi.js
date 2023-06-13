@@ -3,11 +3,13 @@ function main(props) {
   let version =  props.version ? props.version : 'v1.8.8'
   let lang = props.lang ? props.lang : 'en-US'
   let [nav, setNav] = useState(false)
+ 
   useEffect(() => {
     dispose(`./views/components/nav.jsx`, (Page) =>{
         setNav(<Page />)
         
     })
+
   }, [])
   return (
     <div>

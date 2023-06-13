@@ -1,4 +1,4 @@
-let logo = './assets/images/visilogo.png'
+let logo = './assets/images/logo.svg'
 function docs(props){
  
   let [page, setPage] = useState('')
