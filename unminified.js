@@ -1,7 +1,96 @@
+window.onload = () => {
+   let debugOn = document.querySelector("html").hasAttribute("debug");
+    
+  if (!document.querySelector('html').hasAttribute('data-env')) {
+    if (debugOn) {
+      console.warn('⚠️ you are in development mode please set data-env="production" to enable production mode')
+    }
+  
+    let performanceObserver = new PerformanceObserver((list) => {
+      const performanceEntries = [];
+  
+      for (const entry of list.getEntries()) {
+        if (entry.entryType === 'paint') {
+          performanceEntries.push({ Metric: 'Contentful Paint', Value: `${entry.startTime} ms` });
+        } else if (entry.entryType === 'layout-shift') {
+          performanceEntries.push({ Metric: 'Layout Shift', Value: entry.value });
+        } else if (entry.entryType === 'largest-contentful-paint') {
+          performanceEntries.push({ Metric: 'Largest Contentful Paint', Value: `${entry.startTime} ms` });
+  
+        } else {
+          performanceEntries.push({ Metric: entry.name, Value: `${entry.startTime} ms` });
+        }
+      }
+      if (debug.enabled) {
+        console.log('Performance metrics:');
+        console.table(performanceEntries);
+      }
+    });
+  
+    performanceObserver.observe({ entryTypes: ['paint', 'layout-shift', 'largest-contentful-paint'] });
+  }
+  
+      if (document.querySelector("html").getAttribute("data-env") === "production") {
+  
+        document.querySelectorAll('script[src]').forEach(script => {
+          const link = document.createElement("link");
+          link.rel = "preload";
+          link.href = script.src;
+          link.as = "script";
+          document.head.appendChild(link);
+          if(debugOn){
+            console.log(`[VISI] ${script.src} loaded`);
+          }
+        });
+  
+  
+        // Lazy load images
+        document.querySelectorAll('img[src]').forEach(img => {
+  
+          const observer = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting) {
+              const src = img.dataset.src;
+              const link = document.createElement("link");
+              link.rel = "preload";
+              link.as = "image";
+              link.href = img.src
+              document.head.appendChild(link);
+              if (src) {
+                img.src = src;
+                img.removeAttribute('src');
+                observer.disconnect();
+               if(debugOn){
+                console.log(`[VISI] ${img.src} loaded`);
+               }
+  
+              }
+            }
+          });
+          observer.observe(img);
+        });
+  
+  
+        // Preload stylesheets
+        document.querySelectorAll('link[rel="stylesheet"]').forEach(styleSheet => {
+          const link = document.createElement("link");
+          link.rel = "preload";
+          link.href = styleSheet.href;
+          link.as = "style";
+          link.crossOrigin = "anonymous";
+          document.head.appendChild(link);
+        });
+  
+      } else {
+        console.warn("Not in production mode, skipping asset optimization.");
+        console.log(getBundleSize())
+      }
+  
+   
+  }
 async function lib (path = null) {
   let promise = new Promise((resolve, reject) => {
   if(!path) throw new Error("[Library Manager]: No path provided");
-  let cache = JSON.parse(localStorage.getItem('lib_modules') || '{}');
+  let cache =  JSON.parse(localStorage.getItem('lib_modules')) || {};
 
   // Check if CFR is enabled
   const isCFREnabled = document.querySelector("html").getAttribute("data-render") === "cfr";
@@ -28,7 +117,9 @@ async function lib (path = null) {
             document.head.appendChild(style);
             document.head.appendChild(script);
             script.onload = () => {
-              document.body.style.display = "block";
+              setTimeout(() => {
+                document.body.style.display = "block";
+              }, 20);
               document.head.removeChild(script);
             }
    
@@ -68,16 +159,18 @@ async function lib (path = null) {
         style.innerHTML = cache.daisyui;
         let script = document.createElement('script');
         script.innerHTML = cache.tailwindcss;
+        document.body.style.display = "none";
         document.head.appendChild(script);
 
         document.head.appendChild(style);
 
         style.onload = () => {
-          
+           
           if (debug.enabled) {
             console.log(`[VISI] DaisyUI loaded in ${performance.now() - start}ms`);
           }
         }
+        document.body.style.display = "block";
 
       }
     } else {
@@ -531,6 +624,127 @@ async function loadReact() {
   }
 }
 
+async function loadPako(){
+  const debugOn = document.querySelector("html").hasAttribute("debug");
+  const cfr = document.querySelector("html").getAttribute("data-render") === "cfr";
+  const pako_version =  "2.1.0"
+  if(debugOn){
+    console.log(`[VISI] Pako version: ${pako_version} loaded`);
+    console.log('[VISI] Environment:', document.querySelector("html").getAttribute("data-env") || 'production (default)' );
+  }
+
+  if(cfr){
+    const latestVersionRes = await fetch("https://registry.npmjs.org/pako");
+    const latestVersionData = await latestVersionRes.json();
+    const latestVersion = latestVersionData['dist-tags'].latest;
+
+    if(pako_version !== latestVersion){
+      await clearPakoCache();
+      await loadPakoFromUnpkg(latestVersion);
+    }else{
+      if(debugOn){
+        console.log(`[VISI] Pako version: ${pako_version} is up to date`);
+      }
+    }
+
+    const version = "2.1.0" || document.querySelector("html").getAttribute("data-pako-version");
+    const Pako_Cache = await getPakoCache();
+
+    const pako = Pako_Cache.find((item) => item.key === "pako");
+
+    if(pako){
+      let script = document.createElement("script");
+      script.innerHTML = pako.data;
+      document.head.appendChild(script);
+    }else{
+      await loadPakoFromUnpkg(version);
+    }
+  }
+
+}
+async function loadPakoFromUnpkg(version){
+  let env = document.querySelector("html").getAttribute("data-env") || "development";
+
+  try{
+    const response = env === "development"
+    ? await fetch(`https://unpkg.com/pako@${version}/dist/pako.js`)
+    : await fetch(`https://unpkg.com/pako@${version}/dist/pako.min.js`);
+    const pakoScript = await response.text();
+    const Pako_Cache = await getPakoCache();
+    Pako_Cache.push({key: "pako", version: version, data: pakoScript});
+    await savePakoCache(Pako_Cache);
+    let script = document.createElement("script");
+    script.innerHTML = pakoScript;
+    document.head.appendChild(script);
+  }catch(error){
+    console.error("Failed to load Pako from unpkg:", error);
+  }
+}
+async function clearPakoCache(){
+  try{
+    const db = await getPakoIndexedDB();
+    if(db.objectStoreNames.contains("pako_cache")){
+      const transaction = db.transaction("pako_cache", "readwrite");
+      const objectStore = transaction.objectStore("pako_cache");
+
+      objectStore.clear();
+    }
+  }catch(error){
+    console.error("Failed to clear Pako cache:", error);
+  }
+}
+async function getPakoCache(){
+  try{
+    const db = await getPakoIndexedDB();
+    if(db.objectStoreNames.contains("pako_cache")){
+      const transaction = db.transaction("pako_cache", "readonly");
+      const objectStore = transaction.objectStore("pako_cache");
+      const request = objectStore.getAll();
+      return new Promise((resolve, reject) => {
+        request.onsuccess = function(){
+          resolve(request.result);
+        }
+        request.onerror = function(event){
+          reject(event.target.error);
+        }
+      });
+    }
+    return [];
+  }catch(error){
+    console.error("Failed to get Pako cache:", error);
+    return [];
+  }
+}
+async function savePakoCache(cache){
+  try{
+    const db = await getPakoIndexedDB();
+    const transaction = db.transaction("pako_cache", "readwrite");
+    const objectStore = transaction.objectStore("pako_cache");
+    objectStore.clear();
+    for(const item of cache){
+      objectStore.add(item);
+    }
+  }catch(error){
+    console.error("Failed to save Pako cache:", error);
+  }
+}
+function getPakoIndexedDB(){
+  return new Promise((resolve, reject) => {
+    const request = window.indexedDB.open("pako_cache_db", 1);
+    request.onupgradeneeded = function(){
+      const db = request.result;
+      if(!db.objectStoreNames.contains("pako_cache")){
+        db.createObjectStore("pako_cache", {keyPath: "key"});
+      }
+    }
+    request.onsuccess = function(){
+      resolve(request.result);
+    }
+    request.onerror = function(event){
+      reject(event.target.error);
+    }
+  });
+}
 async function loadReactFromUnpkg(version) {
   let env = document.querySelector("html").getAttribute("data-env") || "development";
 
@@ -650,6 +864,7 @@ function getIndexedDB() {
 }
 
 await loadReact();
+await loadPako();
 class Lazy {
   constructor(data) {
     this.data = data;
@@ -991,7 +1206,27 @@ export const SQLStore = {
   tables: {},
 
   run: function (query) {
+    const queryParts = query.split(' ');
+    const queryType = queryParts[0].toLowerCase();
 
+    switch (queryType) {
+      case 'create':
+        this.createTable(queryParts[2], JSON.parse(queryParts[4]));
+        break;
+      case 'insert':
+        this.insertRow(queryParts[2], JSON.parse(queryParts[4]));
+        break;
+      case 'remove':
+        this.removeRow(queryParts[2], JSON.parse(queryParts[4]));
+        break;
+      case 'drop':
+        this.removeTable(queryParts[2]);
+        break;
+      case 'select':
+        return this.selectRows(queryParts[3], JSON.parse(queryParts[5]));
+      default:
+
+    }
   },
   driver: function (store) {
     if (!store || typeof store !== 'object') {
@@ -1204,6 +1439,10 @@ export const SQLStore = {
   }
 };
 window.addEventListener('message', function (event) {
+  let origin = event.origin || event.originalEvent.origin;
+  if (origin !== window.location.origin) {
+    return;
+  }
   const { eventType, data } = event.data;
   if (eventType && data) {
     const { tableName } = data;
@@ -1564,13 +1803,13 @@ window.fs = fs;
 
 export const os = {
   cpus: () => {
-    return navigator.hardwareConcurrency;
+    return  navigator.hardwareConcurrency + " Cores";
   },
   hostname: () => {
-    return navigator.userAgent;
+    return  window.location.hostname;
   },
   platform: () => {
-    let plat = navigator.userAgent
+    let plat = navigator.s
     switch (plat) {
       case plat.includes("Win"):
         return "Windows";
@@ -3928,91 +4167,7 @@ export class ReactRouter_v2 {
 }
 window.ReactRouter_v2 = ReactRouter_v2;
 window.ReactRouter = ReactRouter;
-window.onload = () => {
 
-  setTimeout(() => {
-    
-if (!document.querySelector('html').hasAttribute('data-env')) {
-  if (debug.enabled) {
-    console.warn(' you are in development mode please set data-env="production" to enable production mode')
-  }
-
-  let performanceObserver = new PerformanceObserver((list) => {
-    const performanceEntries = [];
-
-    for (const entry of list.getEntries()) {
-      if (entry.entryType === 'paint') {
-        performanceEntries.push({ Metric: 'Contentful Paint', Value: `${entry.startTime} ms` });
-      } else if (entry.entryType === 'layout-shift') {
-        performanceEntries.push({ Metric: 'Layout Shift', Value: entry.value });
-      } else if (entry.entryType === 'largest-contentful-paint') {
-        performanceEntries.push({ Metric: 'Largest Contentful Paint', Value: `${entry.startTime} ms` });
-
-      } else {
-        performanceEntries.push({ Metric: entry.name, Value: `${entry.startTime} ms` });
-      }
-    }
-    if (debug.enabled) {
-      console.log('Performance metrics:');
-      console.table(performanceEntries);
-    }
-  });
-
-  performanceObserver.observe({ entryTypes: ['paint', 'layout-shift', 'largest-contentful-paint'] });
-}
-
-    if (document.querySelector("html").getAttribute("data-env") === "production") {
-
-      document.querySelectorAll('script[src]').forEach(script => {
-        const link = document.createElement("link");
-        link.rel = "preload";
-        link.href = script.src;
-        link.as = "script";
-        document.head.appendChild(link);
-      });
-
-
-      // Lazy load images
-      document.querySelectorAll('img[src]').forEach(img => {
-
-        const observer = new IntersectionObserver(entries => {
-          if (entries[0].isIntersecting) {
-            const src = img.dataset.src;
-            const link = document.createElement("link");
-            link.rel = "preload";
-            link.as = "image";
-            link.href = img.src
-            document.head.appendChild(link);
-            if (src) {
-              img.src = src;
-              img.removeAttribute('src');
-              observer.disconnect();
-
-
-            }
-          }
-        });
-        observer.observe(img);
-      });
-
-
-      // Preload stylesheets
-      document.querySelectorAll('link[rel="stylesheet"]').forEach(styleSheet => {
-        const link = document.createElement("link");
-        link.rel = "preload";
-        link.href = styleSheet.href;
-        link.as = "style";
-        link.crossOrigin = "anonymous";
-        document.head.appendChild(link);
-      });
-
-    } else {
-      console.warn("Not in production mode, skipping asset optimization.");
-      console.log(getBundleSize())
-    }
-
-  }, 20); // wait 4 second before running
-}
 export const JsonWebToken = {
   sign: (payload, secret, exp = '2h') => {
     const expDate = new Date();
@@ -4107,10 +4262,10 @@ window.React._render = (component) => {
 
   }
 }
-window.visiVersion = "1.8.9-stable"
+window.visiVersion = "1.9.1-canary"
 fetch('https://registry.npmjs.org/visi.js').then(res => res.json()).then(json => {
   if (json['dist-tags'].latest !== visiVersion) {
-    console.assert(false, `You are using an outdated version of Visi.js. Please update to ${json['dist-tags'].latest} by running npx visiapp@latest create <your_app_name>`, {
+    console.warn(`You are using an outdated version of Visi.js. Please update to ${json['dist-tags'].latest} by running npx visiapp@latest create <your_app_name>`, {
       current: visiVersion,
       latest: json['dist-tags'].latest,
     })
@@ -4118,6 +4273,7 @@ fetch('https://registry.npmjs.org/visi.js').then(res => res.json()).then(json =>
 }).catch(err => {
   console.error("Failed to check for updates. Error: " + err)
 })
+ 
 const head = document.getElementsByTagName('head')[0];
 if (!head.querySelector('link[rel="icon"]')) {
   const link = document.createElement('link');
@@ -4236,7 +4392,8 @@ const require = (filename) => {
 };
 
 window.addEventListener('beforeunload', () => {
-  window.onmessage = (event) => {
+  window.onmessage = (event, origin) => {
+    if(origin !== window.location.origin) return;
     if (event.data.type === 'dispose') {
       clearCache();
     }
@@ -4251,9 +4408,6 @@ const workerFunction = () => {
   onmessage =  (event) => {
      
     importScripts('https://unpkg.com/@babel/standalone/babel.min.js');
-  
-    
-    
 
     const { code } = event.data;
     const compiledCode = Babel.transform(code, { presets: ['react', 'typescript'] }).code;
@@ -4272,10 +4426,14 @@ const worker = new Worker(
 const dispose = async (path, callback, props = {}) => {
   const cache = await caches.open(CACHE_NAME);
   const cachedResponse = await cache.match(path);
-
+  
   if (renderingtype === 'cfr' && cachedResponse) {
-    const cachedCode = await cachedResponse.text();
-    const { type, data, componentName, timestamp, version, start } = JSON.parse(cachedCode);
+    const compressedCode = await cachedResponse.blob();
+    const arrayBuffer = await new Response(compressedCode).arrayBuffer();
+    const decompressedCode = pako.ungzip(new Uint8Array(arrayBuffer), { to: 'string' });
+    const { type, data, componentName, timestamp, version, start } = JSON.parse(decompressedCode);
+    
+     
 
     const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
 
@@ -4303,7 +4461,7 @@ const dispose = async (path, callback, props = {}) => {
   fetch(path)
     .then((response) => response.text())
     .then((code) => {
-      let start = Date.now();
+      
       const componentName = path.split('/').pop().split('.')[0];
       let compiledCode;
 
@@ -4317,9 +4475,11 @@ const dispose = async (path, callback, props = {}) => {
           componentName,
           timestamp: currentTime,
           version: cacheVersion,
-          start: Date.now(),
+          start:   Date.now()
         };
-        cache.put(path, new Response(JSON.stringify(cacheData)));
+        const compressedData = pako.gzip(JSON.stringify(cacheData));
+        cache.put(path, new Response(compressedData));
+
         if (debug.enabled) {
           console.log('Cache updated');
         }
@@ -4342,7 +4502,7 @@ const dispose = async (path, callback, props = {}) => {
   worker.onmessage = (event) => {
     const { type, data } = event.data;
     if (type === 'code') {
-      cache.put(path, new Response(JSON.stringify({ type: 'ts', data, componentName, version: cacheVersion })));
+       cache.put(path, new Response( pako.gzip(data)));
     }
   };
 };
@@ -4350,3 +4510,5 @@ const dispose = async (path, callback, props = {}) => {
 window.dispose = dispose;
 
 export { dispose, updateCacheVersion };
+
+ 
