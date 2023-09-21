@@ -1,13 +1,11 @@
 import { ReactRouter } from "./assets/visi.js/visi.min.js"
 
 const app = new ReactRouter()
+console.log(app)
 window.app = app
 lib("@tailwind/daisyui@3.0.20")
 app.bindRoot("app")
-app.use('/')
-app.use('/team')
-app.use('/releases')
-app.use('/docs')
+ 
 updateCacheVersion(4)
 app.root("/", (req, res) =>{
     dispose('./views/main.jsx', (Main) =>{
